@@ -1,0 +1,9 @@
+#ifndef VERSION_HPP
+#define VERSION_HPP
+
+#define APP_NAME      "Daisy"
+#define APP_VERSION   "@daisy_VERSION@"
+#define APP_COPYRIGHT "2023 Tania Hagn (DF9RY) - with GPL V3"
+#define APP_WEBSITE   "https://df9ry.de/software/daisy"
+
+#endif // VERSION_HPP
