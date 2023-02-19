@@ -22,13 +22,15 @@ static string module_id;
 // Meta data:
 static json module_meta;
 
+static send_t default_resp { .send = nullptr };
+
 static void publish_services()
 {
     auto services = ::module_meta["services"].toArray();
     for_each(services.begin(), services.end(), [] (json service) {
         stringstream oss;
         service.write(oss);
-        ::sys->publish(::module_id.c_str(), oss.str().c_str(), nullptr);
+        ::sys->publish(::module_id.c_str(), oss.str().c_str(), &default_resp);
     }); // end for_each //
 }
 

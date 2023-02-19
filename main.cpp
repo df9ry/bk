@@ -16,6 +16,7 @@
 #include <string>
 #include <filesystem>
 #include <exception>
+#include <cassert>
 
 using namespace std;
 using namespace jsonx;
@@ -45,6 +46,9 @@ static const send_t* publish_f(
                         const send_t* resp)
 {
     try {
+        assert(_module_id);
+        assert(_meta);
+        assert(resp);
         json meta;
         meta.parse(_meta);
         string name = meta["name"];
@@ -53,7 +57,7 @@ static const send_t* publish_f(
             throw runtime_error("Module not found: " + name);
         if (!silent)
             cout << "[i] Create service \"" << name << "\"" << endl;
-        Service::create(meta, module_ptr).get();
+        Service::create(meta, module_ptr, resp).get();
         return nullptr;
     } catch (exception &ex) {
         cerr << "Unable to create service: " << ex.what() << endl;
@@ -121,7 +125,11 @@ int main(int argc, char** argv) {
             cout << "[i] Config name: \"" << configuration_name << "\"" << endl;
 
         // Create service "sys":
-        const Service& sys_service = Service::create_service(document["meta"]);
+        send_t sys_endpoint{ .send = nullptr };
+        const Service& sys_service = Service::create_service(
+            document["meta"], 
+            nullptr, 
+            &sys_endpoint);
         service_t sys{ .publish = publish_f, .withdraw = withdraw_f, .debug = debug_f };
         // Loop through the service list to load plugins;
         string plugin_root = document["plugin_root"];
