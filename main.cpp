@@ -2,8 +2,8 @@
 #include "getopt.h"
 #include "so.hpp"
 #include "service.hpp"
-#include "daisy/module.h"
-#include "daisy/service.h"
+#include "bk/module.h"
+#include "bk/service.h"
 
 #include <jsonx.hpp>
 

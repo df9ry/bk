@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.0.0)
-set(PROJECT_NAME daisy)
+set(PROJECT_NAME bk)
 
 project(${PROJECT_NAME} 
     VERSION 0.1.0
-    DESCRIPTION "Main program for the Daisy project"
+    DESCRIPTION "Main program for the Baukasten project"
 )
 
 configure_file(version.hpp.in version.h)
 add_subdirectory("plugins/telnet")
 
 set(PUBLIC_HEADERS
-    daisy/module.h
-    daisy/service.h
+    bk/module.h
+    bk/service.h
 )
 
 set(HEADERS
@@ -32,7 +32,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS})
 
 add_custom_target(copyConf ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/daisy.conf"
+            "${CMAKE_CURRENT_SOURCE_DIR}/bk.conf"
             "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 )
 add_dependencies(copyConf ${PROJECT_NAME})
@@ -65,5 +65,5 @@ endif()
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME       DESTINATION "${CMAKE_BUILD_TYPE}/bin"
-    PUBLIC_HEADER DESTINATION "${CMAKE_BUILD_TYPE}/include/daisy"
+    PUBLIC_HEADER DESTINATION "${CMAKE_BUILD_TYPE}/include/bk"
 )

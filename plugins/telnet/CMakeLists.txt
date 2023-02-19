@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0.0)
-set(PROJECT_NAME daisy_plugin_telnet)
+set(PROJECT_NAME bk_telnet)
 
 project(${PROJECT_NAME} 
     VERSION 0.1.0
-    DESCRIPTION "Sys plugin for Daisy"
+    DESCRIPTION "Telnet plugin for Baukasten"
 )
 
 set(SOURCES
