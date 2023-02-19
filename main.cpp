@@ -93,29 +93,22 @@ int main(int argc, char** argv) {
         // Loop through the service list to load plugins;
         string plugin_root = document["plugin_root"];
         auto plugins = document["plugins"].toArray();
-        for_each(plugins.begin(), plugins.end(),  [&] (json plugin) {
-            string name = plugin["name"];
-            filesystem::path path = plugin["path"].toString();
+        for_each(plugins.begin(), plugins.end(),  [&] (json meta) {
+            filesystem::path path = meta["path"].toString();
             filesystem::path plugin_path = filesystem::weakly_canonical(
                 plugin_root.append("/").append(path)
             );
             if (!silent)
-                cout << "[i] Loading plugin \"" << name 
-                     << "\" from " << plugin_path << endl;
-            SharedObject* so = new SharedObject();
-            if (!so->load(plugin_path.c_str()))
-                throw runtime_error("Unable to load shared object" 
-                        + string(plugin_path.c_str())
-                        + ": Error: " 
-                        + so->error_text());
+                cout << "[i] Loading " << plugin_path << endl;
+            auto so = SharedObject::create(plugin_path, meta);
+            // Bind and call the load method of the plugin:
             const module_t* module = static_cast<module_t*>(so->getsym("module"));
             if (!module)
-                throw runtime_error("Unable to load module from " 
+                throw runtime_error("Import error in " 
                         + string(plugin_path.c_str()) 
-                        + ": Error: " 
-                        + so->error_text());
+                        + ": Error: " + so->error_text());
             if (module->load)
-                module->load(&sys); 
+                module->load(so->id.c_str(), &sys); 
         });
     }
     catch (exception &ex) {

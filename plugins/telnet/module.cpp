@@ -10,7 +10,7 @@ using namespace std;
 
 static const service_t* sys_service = nullptr;
 
-static void on_load(const service_t* _sys_service)
+static void on_load(const char* id, const service_t* _sys_service)
 {
     cout << "Module loaded" << endl;
     assert(_sys_service);

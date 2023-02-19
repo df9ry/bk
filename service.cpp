@@ -3,7 +3,7 @@
 using namespace std;
 using namespace jsonx;
 
-Service::ServiceMap_t Service::service_map;
+Service::Map_t Service::service_map;
 
 Service::Service(const json &_meta, SharedObject::Ptr_t _so):
     meta{_meta}, so{_so}
@@ -14,7 +14,7 @@ Service::~Service()
 {
 }
 
-Service::ServicePtr_t Service::create(json meta, SharedObject::Ptr_t _so)    
+Service::Ptr_t Service::create(json meta, SharedObject::Ptr_t _so)    
 {
     string name = meta["name"];
     if (service_map.contains(name))

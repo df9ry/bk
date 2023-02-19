@@ -8,7 +8,7 @@ extern "C" {
 #include "service.h"
 
 struct module_t {
-    void (*load)  (const service_t *sys_service);
+    void (*load)  (const char *id, const service_t *sys_service);
     void (*start) (const char *meta);
     void (*stop)  ();
 };

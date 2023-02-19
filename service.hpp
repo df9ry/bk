@@ -19,8 +19,8 @@ public:
 
 class Service {
 public:
-    typedef std::shared_ptr<Service> ServicePtr_t;
-    typedef std::map<std::string, ServicePtr_t> ServiceMap_t;
+    typedef std::shared_ptr<Service> Ptr_t;
+    typedef std::map<std::string, Ptr_t> Map_t;
 
     Service() = delete;
     Service(const Service& other) = delete;
@@ -32,7 +32,7 @@ public:
         return service_map.contains(name);
     }
 
-    static ServicePtr_t lookup(const std::string &name) {
+    static Ptr_t lookup(const std::string &name) {
         auto iter = service_map.find(name);
         return (iter != service_map.end()) ? iter->second : nullptr;
     }
@@ -44,7 +44,7 @@ public:
         return *ptr; 
     }
 
-    static ServicePtr_t create(jsonx::json meta, SharedObject::Ptr_t so = nullptr);
+    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so = nullptr);
 
     static const Service& create_service(jsonx::json meta, SharedObject::Ptr_t so = nullptr);
 
@@ -55,7 +55,7 @@ public:
     std::string get_name() const { return meta["name"]; }
 
 private:
-    static ServiceMap_t service_map;
+    static Map_t service_map;
 
     jsonx::json         meta;
     SharedObject::Ptr_t so;
