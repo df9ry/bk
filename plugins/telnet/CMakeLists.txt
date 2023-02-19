@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.7)
 set(PROJECT_NAME bk_telnet)
 
 project(${PROJECT_NAME} 
@@ -16,7 +16,8 @@ set(HEADERS
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
 target_compile_features(${PROJECT_NAME}
-    PUBLIC cxx_std_20)
+    PUBLIC cxx_std_20
+)
 
 target_include_directories(${PROJECT_NAME} PUBLIC BEFORE
             "${CMAKE_CURRENT_SOURCE_DIR}/../.."

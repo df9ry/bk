@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.7)
 set(PROJECT_NAME bk)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 project(${PROJECT_NAME} 
     VERSION 0.1.0
@@ -11,6 +12,7 @@ add_subdirectory("plugins/telnet")
 
 set(PUBLIC_HEADERS
     bk/module.h
+    bk/send.h
     bk/service.h
 )
 
@@ -30,12 +32,11 @@ set(SOURCES
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS})
 
-add_custom_target(copyConf ALL
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/bk.conf"
-            "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+        ${CMAKE_SOURCE_DIR}/bk.conf
+        ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_dependencies(copyConf ${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     PUBLIC_HEADER "${PUBLIC_HEADERS}"

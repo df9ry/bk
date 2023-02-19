@@ -2,37 +2,60 @@
 #include <bk/module.h>
 #include <bk/service.h>
 
-#include <iostream>
+#include <jsonx.hpp>
+
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <cassert>
+#include <exception>
 
 using namespace std;
+using namespace jsonx;
 
-static const service_t* sys_service = nullptr;
+// Interface to system service structure:
+static const service_t* sys = nullptr;
 
-static void on_load(const char* id, const service_t* _sys_service)
+// ID of the module:
+static string module_id;
+
+// Meta data:
+static json module_meta;
+
+static void publish_services()
 {
-    cout << "Module loaded" << endl;
-    assert(_sys_service);
-    assert(_sys_service->publish);
-    assert(_sys_service->withdraw);
-    ::sys_service = _sys_service;
-}
-
-static void on_start(const char *meta)
-{
-    cout << "Module started" << endl;
-}
-
-static void on_stop()
-{
-    cout << "Module stopped" << endl;
+    auto services = ::module_meta["services"].toArray();
+    for_each(services.begin(), services.end(), [] (json service) {
+        stringstream oss;
+        service.write(oss);
+        ::sys->publish(::module_id.c_str(), oss.str().c_str(), nullptr);
+    }); // end for_each //
 }
 
 extern "C" {
     module_t module {
-        .load  = on_load, 
-        .start = on_start, 
-        .stop  = on_stop
+        .load  = [] (const char      *_id,
+                     const service_t *_sys, 
+                     const char      *_meta)
+        {
+            assert(_id);
+            ::module_id = _id;
+            assert(_sys);
+            assert(_sys->publish);
+            assert(_sys->withdraw);
+            assert(_sys->debug);
+            ::sys = _sys;
+            assert(_meta);
+            try {
+                ::module_meta.parse(_meta);
+            }
+            catch(const runtime_error &ex) {
+                ::sys->debug(BK_FATAL, ex.what());
+            }
+            ::sys->debug(BK_INFO, "Loading module telnet");
+            ::publish_services();
+        },
+        .start = [] () {}, 
+        .stop  = [] () {}
     };
 } // end extern C //

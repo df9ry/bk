@@ -4,11 +4,14 @@
 #include "service.hpp"
 #include "bk/module.h"
 #include "bk/service.h"
+#include "bk/send.h"
 
+#include <cstdlib>
 #include <jsonx.hpp>
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <filesystem>
@@ -16,6 +19,8 @@
 
 using namespace std;
 using namespace jsonx;
+
+static bool  silent{false};
 
 static void print_version(ostream &os)
 {
@@ -34,12 +39,47 @@ static void help(ostream &os, const char *name)
        << "\t-s .......................... Silent" << endl;
 }
 
+static const send_t* publish_f(
+                        const char* _module_id, 
+                        const char* _meta, 
+                        const send_t* resp)
+{
+    try {
+        json meta;
+        meta.parse(_meta);
+        string name = meta["name"];
+        auto module_ptr = SharedObject::lookup(_module_id);
+        if (!module_ptr)
+            throw runtime_error("Module not found: " + name);
+        if (!silent)
+            cout << "[i] Create service \"" << name << "\"" << endl;
+        Service::create(meta, module_ptr).get();
+        return nullptr;
+    } catch (exception &ex) {
+        cerr << "Unable to create service: " << ex.what() << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+static bool withdraw_f(const char *module_id, const char *name)
+{
+    return Service::remove_service(name);
+}
+
+static void debug_f(grade_t grade, const char *msg)
+{
+    if (grade == BK_FATAL)
+        throw runtime_error(msg);
+    if ((::silent) && (grade == BK_DEBUG))
+        return;
+    cerr << "[" << static_cast<char>(grade) << "] " << msg << endl;
+}
+
 int main(int argc, char** argv) {
     int   option{0};
-    bool  silent{false};
 
     filesystem::path cwd = filesystem::path(argv[0]).parent_path();
-    filesystem::path config_file_name = cwd.append("daisy.conf");
+    filesystem::path config_file_name = cwd.append("bk.conf");
 
     // Get options:
     while ((option = getopt(argc, argv, "c:hv")) >= 0) {
@@ -82,14 +122,7 @@ int main(int argc, char** argv) {
 
         // Create service "sys":
         const Service& sys_service = Service::create_service(document["meta"]);
-        service_t sys{
-            .publish = [] (const char *meta)->void* {
-                 return Service::create(meta).get();
-            },
-            .withdraw = [] (const char *name)->bool {
-                return Service::remove_service(name);
-            }
-        };
+        service_t sys{ .publish = publish_f, .withdraw = withdraw_f, .debug = debug_f };
         // Loop through the service list to load plugins;
         string plugin_root = document["plugin_root"];
         auto plugins = document["plugins"].toArray();
@@ -107,8 +140,11 @@ int main(int argc, char** argv) {
                 throw runtime_error("Import error in " 
                         + string(plugin_path.c_str()) 
                         + ": Error: " + so->error_text());
-            if (module->load)
-                module->load(so->id.c_str(), &sys); 
+            if (module->load) {
+                ostringstream oss;
+                meta.write(oss);
+                module->load(so->id.c_str(), &sys, oss.str().c_str()); 
+            }
         });
     }
     catch (exception &ex) {

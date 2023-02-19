@@ -1,5 +1,5 @@
-#ifndef _MODULE_HPP
-#define _MODULE_HPP
+#ifndef _MODULE_H
+#define _MODULE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -8,8 +8,10 @@ extern "C" {
 #include "service.h"
 
 struct module_t {
-    void (*load)  (const char *id, const service_t *sys_service);
-    void (*start) (const char *meta);
+    void (*load)  (const char *id, 
+                   const service_t *sys_service,
+                   const char *meta);
+    void (*start) ();
     void (*stop)  ();
 };
 
@@ -17,4 +19,4 @@ struct module_t {
 }
 #endif
 
-#endif // _MODULE_HPP //
+#endif // _MODULE_H //
