@@ -17,11 +17,12 @@
 #include <filesystem>
 #include <exception>
 #include <cassert>
+#include <cstring>
 
 using namespace std;
 using namespace jsonx;
 
-static bool  silent{false};
+static bool silent{false};
 
 static void print_version(ostream &os)
 {
@@ -35,10 +36,19 @@ static void help(ostream &os, const char *name)
 {
     print_version(os);
     os << "Usage: " << name << endl
-       << "\t-c <config file> ............ Configuration file" << endl
-       << "\t-h .......................... Print help (this message)" << endl
-       << "\t-s .......................... Silent" << endl;
+       << "\t-c <config file> .. Configuration file" << endl
+       << "\t-h ................ Print help (this message)" << endl
+       << "\t-s ................ Silent" << endl;
 }
+
+static const send_t admin_endpoint {
+    .send = [] (const char* head, const uint8_t* p_body, size_t c_body)-> bk_error_t
+    {
+        if (p_body && (strcmp("quit", (char*)p_body) == 0))
+            cerr << "[i] Quit" << endl;
+        return BK_OK;
+    }
+};
 
 static const send_t* publish_f(
                         const char* _module_id, 
@@ -58,7 +68,7 @@ static const send_t* publish_f(
         if (!silent)
             cout << "[i] Create service \"" << name << "\"" << endl;
         Service::create(meta, module_ptr, resp).get();
-        return nullptr;
+        return &admin_endpoint;
     } catch (exception &ex) {
         cerr << "Unable to create service: " << ex.what() << endl;
         exit(EXIT_FAILURE);
@@ -76,7 +86,8 @@ static void debug_f(grade_t grade, const char *msg)
         throw runtime_error(msg);
     if ((::silent) && (grade == BK_DEBUG))
         return;
-    cerr << "[" << static_cast<char>(grade) << "] " << msg << endl;
+    auto &stream = ((grade == 'w') || (grade == 'e')) ? cerr : cout;
+    stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
 }
 
 int main(int argc, char** argv) {

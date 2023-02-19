@@ -2,6 +2,7 @@
 #define _SERVICE_HPP
 
 #include "so.hpp"
+#include "bk/send.h"
 
 #include <stdexcept>
 #include <string>
@@ -10,7 +11,6 @@
 #include <exception>
 
 #include <jsonx.hpp>
-#include "bk/send.h"
 
 class ServiceException: public std::runtime_error
 {
@@ -73,7 +73,5 @@ private:
     SharedObject::Ptr_t so;
     send_t              endpoint;
 };
-
-
 
 #endif // _SERVICE_HPP //

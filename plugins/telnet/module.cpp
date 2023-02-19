@@ -24,13 +24,16 @@ static json module_meta;
 
 static send_t default_resp { .send = nullptr };
 
+static send_t default_requ {};
+
 static void publish_services()
 {
     auto services = ::module_meta["services"].toArray();
     for_each(services.begin(), services.end(), [] (json service) {
         stringstream oss;
         service.write(oss);
-        ::sys->publish(::module_id.c_str(), oss.str().c_str(), &default_resp);
+        default_requ = *::sys->publish(::module_id.c_str(), oss.str().c_str(), &default_resp);
+        default_requ.send(nullptr, (uint8_t*)"quit", 6);
     }); // end for_each //
 }
 
