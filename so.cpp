@@ -51,6 +51,7 @@ bool SharedObject::load(const string &path)
 	if (!handle) {
         const char* err = dlerror();
         error = err ? err : "unknown error";
+        cerr << "[f] " << error << endl;
         return false;
 	}
 	return true;

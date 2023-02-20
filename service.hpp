@@ -18,31 +18,31 @@ public:
     ServiceException(const std::string &msg): std::runtime_error(msg.c_str()) {}
 };
 
-class Service {
+class Plugin {
 public:
-    typedef std::shared_ptr<Service> Ptr_t;
+    typedef std::shared_ptr<Plugin> Ptr_t;
     typedef std::map<std::string, Ptr_t> Map_t;
 
-    Service(
+    Plugin(
         const jsonx::json &meta, 
         SharedObject::Ptr_t so,
         const send_t* endpoint);
-    ~Service();
+    ~Plugin();
 
-    Service() = delete;
-    Service(const Service& other) = delete;
-    Service(Service&& other) = delete;
+    Plugin() = delete;
+    Plugin(const Plugin& other) = delete;
+    Plugin(Plugin&& other) = delete;
 
     static bool is_defined(const std::string &name) {
-        return service_map.contains(name);
+        return container.contains(name);
     }
 
     static Ptr_t lookup(const std::string &name) {
-        auto iter = service_map.find(name);
-        return (iter != service_map.end()) ? iter->second : nullptr;
+        auto iter = container.find(name);
+        return (iter != container.end()) ? iter->second : nullptr;
     }
 
-    static const Service& lookup_service(const std::string &name) {
+    static const Plugin& lookup_service(const std::string &name) {
         auto ptr = lookup(name);
         if (!ptr)
             throw ServiceException("Service not found: " + name);
@@ -54,20 +54,20 @@ public:
         SharedObject::Ptr_t so, 
         const send_t* endpoint);
 
-    static const Service& create_service(
+    static const Plugin& create_service(
         jsonx::json meta, 
         SharedObject::Ptr_t so, 
         const send_t* endpoint);
 
     static bool remove_service(const std::string &name) {
-        return service_map.erase(name);
+        return container.erase(name);
     }
 
     std::string get_name() const { return meta["name"]; }
     const send_t* get_endpoint() const { return &endpoint; }
 
 private:
-    static Map_t service_map;
+    static Map_t container;
 
     jsonx::json         meta;
     SharedObject::Ptr_t so;

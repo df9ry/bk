@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "error.h"
 #include "send.h"
 
 enum grade_t {
@@ -12,12 +13,9 @@ enum grade_t {
 };
 
 struct service_t {
-    const send_t* (*publish)  (
-                        const char* module_id, 
-                        const char* meta, 
-                        const send_t* resp_f);
-    bool (*withdraw) (const char* module_id, const char* name);
-    void (*debug)    (grade_t grade, const char* text);
+    bk_error_t (*publish)  (const char* module_id, const char* meta, const send_t* resp_f);
+    bool       (*withdraw) (const char* module_id, const char* name);
+    void       (*debug)    (grade_t grade, const char* text);
 };
 
 #ifdef __cplusplus

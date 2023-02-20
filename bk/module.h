@@ -6,13 +6,12 @@ extern "C" {
 #endif
 
 #include "service.h"
+#include "error.h"
 
 struct module_t {
-    void (*load)  (const char *id, 
-                   const service_t *sys_service,
-                   const char *meta);
-    void (*start) ();
-    void (*stop)  ();
+    bk_error_t (*load)  (const char *id, const service_t *sys_service, const char *meta);
+    bk_error_t (*start) ();
+    bk_error_t (*stop)  ();
 };
 
 #ifdef __cplusplus

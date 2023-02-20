@@ -46,14 +46,11 @@ static const send_t admin_endpoint {
     {
         if (p_body && (strcmp("quit", (char*)p_body) == 0))
             cerr << "[i] Quit" << endl;
-        return BK_OK;
+        return BK_ERC_OK;
     }
 };
 
-static const send_t* publish_f(
-                        const char* _module_id, 
-                        const char* _meta, 
-                        const send_t* resp)
+static bk_error_t publish_f(const char* _module_id, const char* _meta, const send_t* resp)
 {
     try {
         assert(_module_id);
@@ -67,8 +64,8 @@ static const send_t* publish_f(
             throw runtime_error("Module not found: " + name);
         if (!silent)
             cout << "[i] Create service \"" << name << "\"" << endl;
-        Service::create(meta, module_ptr, resp).get();
-        return &admin_endpoint;
+        Plugin::create(meta, module_ptr, resp).get();
+        return BK_ERC_OK;
     } catch (exception &ex) {
         cerr << "Unable to create service: " << ex.what() << endl;
         exit(EXIT_FAILURE);
@@ -77,7 +74,7 @@ static const send_t* publish_f(
 
 static bool withdraw_f(const char *module_id, const char *name)
 {
-    return Service::remove_service(name);
+    return Plugin::remove_service(name);
 }
 
 static void debug_f(grade_t grade, const char *msg)
@@ -95,6 +92,8 @@ int main(int argc, char** argv) {
 
     filesystem::path cwd = filesystem::path(argv[0]).parent_path();
     filesystem::path config_file_name = cwd.append("bk.conf");
+
+    cout << "CurDir=" << cwd << endl;
 
     // Get options:
     while ((option = getopt(argc, argv, "c:hv")) >= 0) {
@@ -137,7 +136,7 @@ int main(int argc, char** argv) {
 
         // Create service "sys":
         send_t sys_endpoint{ .send = nullptr };
-        const Service& sys_service = Service::create_service(
+        const Plugin& sys_service = Plugin::create_service(
             document["meta"], 
             nullptr, 
             &sys_endpoint);

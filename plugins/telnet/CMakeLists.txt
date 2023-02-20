@@ -7,10 +7,11 @@ project(${PROJECT_NAME}
 )
 
 set(SOURCES
-    module.cpp
+    plugin.cpp
 )
 
 set(HEADERS
+    plugin.hpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})

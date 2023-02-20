@@ -11,6 +11,7 @@ configure_file(version.hpp.in version.h)
 add_subdirectory("plugins/telnet")
 
 set(PUBLIC_HEADERS
+    bk/error.h
     bk/module.h
     bk/send.h
     bk/service.h
@@ -30,7 +31,11 @@ set(SOURCES
     so.cpp
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS})
+set(EXTRA
+    bk.conf
+)
+
+add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS} ${EXTRA})
 
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different

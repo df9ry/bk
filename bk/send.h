@@ -8,10 +8,10 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-enum bk_error_t { BK_OK };
+#include "error.h"
 
 struct send_t {
-    enum bk_error_t (*send) (const char* head, const uint8_t* p_body, size_t c_body);
+    bk_error_t (*send) (const char* head, const uint8_t* p_body, size_t c_body);
 };
 
 #ifdef __cplusplus
