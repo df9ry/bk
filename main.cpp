@@ -4,7 +4,6 @@
 #include "service.hpp"
 #include "bk/module.h"
 #include "bk/service.h"
-#include "bk/send.h"
 
 #include <cstdlib>
 #include <jsonx.hpp>
@@ -41,21 +40,13 @@ static void help(ostream &os, const char *name)
        << "\t-s ................ Silent" << endl;
 }
 
-static const send_t admin_endpoint {
-    .send = [] (const char* head, const uint8_t* p_body, size_t c_body)-> bk_error_t
-    {
-        if (p_body && (strcmp("quit", (char*)p_body) == 0))
-            cerr << "[i] Quit" << endl;
-        return BK_ERC_OK;
-    }
-};
-
-static bk_error_t publish_f(const char* _module_id, const char* _meta, const send_t* resp)
+static bk_error_t publish_f(const char*            _module_id,
+                            const char*            _meta,
+                            const session_admin_t* _session_admin_ifc)
 {
     try {
         assert(_module_id);
         assert(_meta);
-        assert(resp);
         json meta;
         meta.parse(_meta);
         string name = meta["name"];
@@ -64,7 +55,7 @@ static bk_error_t publish_f(const char* _module_id, const char* _meta, const sen
             throw runtime_error("Module not found: " + name);
         if (!silent)
             cout << "[i] Create service \"" << name << "\"" << endl;
-        Plugin::create(meta, module_ptr, resp).get();
+        Service::create(meta, module_ptr, _session_admin_ifc).get();
         return BK_ERC_OK;
     } catch (exception &ex) {
         cerr << "Unable to create service: " << ex.what() << endl;
@@ -74,7 +65,7 @@ static bk_error_t publish_f(const char* _module_id, const char* _meta, const sen
 
 static bool withdraw_f(const char *module_id, const char *name)
 {
-    return Plugin::remove_service(name);
+    return Service::remove_service(name);
 }
 
 static void debug_f(grade_t grade, const char *msg)
@@ -86,6 +77,10 @@ static void debug_f(grade_t grade, const char *msg)
     auto &stream = ((grade == 'w') || (grade == 'e')) ? cerr : cout;
     stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
 }
+
+static session_admin_t sys_sap {
+
+};
 
 int main(int argc, char** argv) {
     int   option{0};
@@ -135,11 +130,8 @@ int main(int argc, char** argv) {
             cout << "[i] Config name: \"" << configuration_name << "\"" << endl;
 
         // Create service "sys":
-        send_t sys_endpoint{ .send = nullptr };
-        const Plugin& sys_service = Plugin::create_service(
-            document["meta"], 
-            nullptr, 
-            &sys_endpoint);
+        const Service& sys_service = Service::create_service(
+                    document["meta"], nullptr, &sys_sap);
         service_t sys{ .publish = publish_f, .withdraw = withdraw_f, .debug = debug_f };
         // Loop through the service list to load plugins;
         string plugin_root = document["plugin_root"];

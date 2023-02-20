@@ -1,9 +1,7 @@
 
 #include "plugin.hpp"
 
-#include <bk/module.h>
-#include <bk/service.h>
-#include <bk/error.h>
+#include "bk/module.h"
 
 #include <jsonx.hpp>
 
@@ -18,8 +16,6 @@ using namespace jsonx;
 
 Plugin* Plugin::self{nullptr};
 
-static send_t default_resp { .send = nullptr };
-
 bk_error_t Plugin::publish_services()
 {
     assert(Plugin::self);
@@ -27,13 +23,16 @@ bk_error_t Plugin::publish_services()
     for_each(services.begin(), services.end(), [this] (json service) {
         stringstream oss;
         service.write(oss);
-        bk_error_t erc = service_ifc.publish(id.c_str(), oss.str().c_str(), &default_resp);
+#if 0
+
+        bk_error_t erc = service_ifc.publish(id.c_str(), oss.str().c_str());
         if (erc != BK_ERC_OK)
             service_ifc.debug(BK_FATAL, (
                                   "Unable to publish service \"" +
                                   service["name"].toString() +
                                   "\"!. ERC = " +
                                   to_string(erc)).c_str());
+#endif
     }); // end for_each //
     return BK_ERC_OK;
 }

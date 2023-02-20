@@ -3,28 +3,28 @@
 using namespace std;
 using namespace jsonx;
 
-Plugin::Map_t Plugin::container;
+Service::Map_t Service::container;
 
-Plugin::Plugin(const json &_meta, SharedObject::Ptr_t _so, const send_t* _endpoint):
-    meta{_meta}, so{_so}, endpoint{*_endpoint}
+Service::Service(const json &_meta, SharedObject::Ptr_t _so, const session_admin_t* _sap):
+    meta{_meta}, so{_so}, session_admin_ifc{*_sap}
 {
 }
 
-Plugin::~Plugin()
+Service::~Service()
 {
 }
 
-Plugin::Ptr_t Plugin::create(json meta, SharedObject::Ptr_t _so, const send_t* _endpoint)    
+Service::Ptr_t Service::create(json meta, SharedObject::Ptr_t _so, const session_admin_t* _sap)
 {
     string name = meta["name"];
     if (container.contains(name))
         return nullptr;
-    return container.emplace(name, new Plugin(meta, _so, _endpoint)).first->second;
+    return container.emplace(name, new Service(meta, _so, _sap)).first->second;
 }
 
-const Plugin& Plugin::create_service(json meta, SharedObject::Ptr_t _so, const send_t* _endpoint) {
+const Service& Service::create_service(json meta, SharedObject::Ptr_t _so, session_admin_t* _sap) {
     string name = meta["name"];
     if (container.contains(name))
         throw ServiceException("Service already defined: " + name);
-    return *container.emplace(name, new Plugin(meta, _so, _endpoint)).first->second;
+    return *container.emplace(name, new Service(meta, _so, _sap)).first->second;
 }

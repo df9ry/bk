@@ -8,6 +8,7 @@
 
 #include <bk/error.h>
 #include <bk/service.h>
+#include <bk/session.h>
 
 class PluginException: public std::runtime_error
 {

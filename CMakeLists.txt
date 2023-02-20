@@ -13,8 +13,8 @@ add_subdirectory("plugins/telnet")
 set(PUBLIC_HEADERS
     bk/error.h
     bk/module.h
-    bk/send.h
     bk/service.h
+    bk/session.h
 )
 
 set(HEADERS
@@ -32,14 +32,14 @@ set(SOURCES
 )
 
 set(EXTRA
-    bk.conf
+    conf.json
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS} ${EXTRA})
 
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/bk.conf
+        ${CMAKE_SOURCE_DIR}/conf.json
         ${CMAKE_CURRENT_BINARY_DIR}
 )
 
