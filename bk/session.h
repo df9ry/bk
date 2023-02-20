@@ -38,8 +38,8 @@ struct session_t {
 
 struct session_admin_t {
     bk_error_t (*open_session)  (const char* meta,
-                                 session_t*  session_ifc_ptr,
-                                 int*        session_id);
+                                 session_t** session_ifc_ptr,
+                                 int*        session_id_ptr);
     bk_error_t (*close_session) (int         session_id);
 };
 

@@ -28,3 +28,16 @@ const Service& Service::create_service(json meta, SharedObject::Ptr_t _so, sessi
         throw ServiceException("Service already defined: " + name);
     return *container.emplace(name, new Service(meta, _so, _sap)).first->second;
 }
+
+bk_error_t Service::start() {
+    //TODO: Use debug interface
+    cout << "[i] Starting service \"" << get_name() << "\"" << endl;
+    return BK_ERC_OK;
+}
+
+bk_error_t Service::stop() {
+    //TODO: Use debug interface
+    cout << "[i] Stopping service \"" << get_name() << "\"" << endl;
+    return BK_ERC_OK;
+}
+

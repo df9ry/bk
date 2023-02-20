@@ -1,5 +1,6 @@
 
 #include "plugin.hpp"
+#include "server.hpp"
 
 #include "bk/module.h"
 
@@ -23,16 +24,16 @@ bk_error_t Plugin::publish_services()
     for_each(services.begin(), services.end(), [this] (json service) {
         stringstream oss;
         service.write(oss);
-#if 0
-
-        bk_error_t erc = service_ifc.publish(id.c_str(), oss.str().c_str());
+        auto server = Server::create(service);
+        bk_error_t erc = service_ifc.publish(id.c_str(),
+                                             oss.str().c_str(),
+                                             server->get_session_admin());
         if (erc != BK_ERC_OK)
             service_ifc.debug(BK_FATAL, (
                                   "Unable to publish service \"" +
                                   service["name"].toString() +
                                   "\"!. ERC = " +
                                   to_string(erc)).c_str());
-#endif
     }); // end for_each //
     return BK_ERC_OK;
 }

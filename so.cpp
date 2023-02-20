@@ -1,4 +1,5 @@
 #include "so.hpp"
+#include "service.hpp"
 
 #include <dlfcn.h>
 #include <uuid/uuid.h>
@@ -76,3 +77,14 @@ void* SharedObject::getsym(const string &name)
 	}
 	return addr;
 }
+
+bk_error_t SharedObject::start()
+{
+    return BK_ERC_OK;
+}
+
+bk_error_t SharedObject::stop()
+{
+    return BK_ERC_OK;
+}
+

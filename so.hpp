@@ -9,6 +9,8 @@
 
 #include <jsonx.hpp>
 
+#include "bk/error.h"
+
 class SharedObjectException: public std::runtime_error
 {
 public:
@@ -58,6 +60,8 @@ public:
 
     bool load(const std::string &path);
     void* getsym(const std::string &name);
+    bk_error_t start();
+    bk_error_t stop();
 
     std::string error_text() const { return error; }
 

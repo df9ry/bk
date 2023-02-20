@@ -57,6 +57,8 @@ public:
     }
 
     std::string get_name() const { return meta["name"]; }
+    bk_error_t start();
+    bk_error_t stop();
 
 private:
     static Map_t container;

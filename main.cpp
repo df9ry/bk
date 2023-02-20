@@ -40,46 +40,57 @@ static void help(ostream &os, const char *name)
        << "\t-s ................ Silent" << endl;
 }
 
-static bk_error_t publish_f(const char*            _module_id,
-                            const char*            _meta,
-                            const session_admin_t* _session_admin_ifc)
-{
-    try {
-        assert(_module_id);
-        assert(_meta);
-        json meta;
-        meta.parse(_meta);
-        string name = meta["name"];
-        auto module_ptr = SharedObject::lookup(_module_id);
-        if (!module_ptr)
-            throw runtime_error("Module not found: " + name);
-        if (!silent)
-            cout << "[i] Create service \"" << name << "\"" << endl;
-        Service::create(meta, module_ptr, _session_admin_ifc).get();
-        return BK_ERC_OK;
-    } catch (exception &ex) {
-        cerr << "Unable to create service: " << ex.what() << endl;
-        exit(EXIT_FAILURE);
+static int is_sys_session_open{false};
+
+static session_t sys_session {
+    .get = [] (int         session_id,
+               const char* request_meta,
+               response_f  response_function, void* user_data)->bk_error_t
+    {
+        return BK_ERC_NOT_IMPLEMENTED;
+    },
+    .put = [] (int         session_id,
+               const char* request_meta,
+               uint8_t*    p_request_body,
+               size_t      c_request_body)->bk_error_t
+    {
+        return BK_ERC_NOT_IMPLEMENTED;
+    },
+    .xch = [] (int         session_id,
+               const char* request_meta,
+               uint8_t*    p_request_body,
+               size_t      c_request_body,
+               response_f  response_function, void* user_data)->bk_error_t
+    {
+        return BK_ERC_NOT_IMPLEMENTED;
     }
-}
-
-static bool withdraw_f(const char *module_id, const char *name)
-{
-    return Service::remove_service(name);
-}
-
-static void debug_f(grade_t grade, const char *msg)
-{
-    if (grade == BK_FATAL)
-        throw runtime_error(msg);
-    if ((::silent) && (grade == BK_DEBUG))
-        return;
-    auto &stream = ((grade == 'w') || (grade == 'e')) ? cerr : cout;
-    stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
-}
+};
 
 static session_admin_t sys_sap {
-
+    .open_session = [] (const char* meta,
+                        session_t** session_ifc_ptr,
+                        int* session_id_ptr)->bk_error_t
+    {
+        if (is_sys_session_open)
+            return BK_ERC_TO_MUCH_SESSIONS;
+        if (!session_ifc_ptr)
+            return BK_ERC_NO_SESSION_IFC_PTR;
+        is_sys_session_open = true;
+        *session_ifc_ptr = &sys_session;
+        if (!session_id_ptr)
+            return BK_ERC_NO_SESSION_ID_PTR;
+        *session_id_ptr = 0;
+        return BK_ERC_OK;
+    },
+    .close_session = [] (int session_id)->bk_error_t
+    {
+        if (is_sys_session_open) {
+            is_sys_session_open = false;
+            return BK_ERC_OK;
+        } else {
+            return BK_ERC_NO_SUCH_SESSION;
+        }
+    }
 };
 
 int main(int argc, char** argv) {
@@ -87,8 +98,6 @@ int main(int argc, char** argv) {
 
     filesystem::path cwd = filesystem::path(argv[0]).parent_path();
     filesystem::path config_file_name = cwd.append("bk.conf");
-
-    cout << "CurDir=" << cwd << endl;
 
     // Get options:
     while ((option = getopt(argc, argv, "c:hv")) >= 0) {
@@ -130,10 +139,47 @@ int main(int argc, char** argv) {
             cout << "[i] Config name: \"" << configuration_name << "\"" << endl;
 
         // Create service "sys":
-        const Service& sys_service = Service::create_service(
-                    document["meta"], nullptr, &sys_sap);
-        service_t sys{ .publish = publish_f, .withdraw = withdraw_f, .debug = debug_f };
-        // Loop through the service list to load plugins;
+        const Service& sys_service =
+                Service::create_service(document["meta"], nullptr, &sys_sap);
+        service_t sys {
+            .publish = [] (const char*            _module_id,
+                           const char*            _meta,
+                           const session_admin_t* _session_admin_ifc)->bk_error_t
+            {
+                try {
+                    assert(_module_id);
+                    assert(_meta);
+                    json meta;
+                    meta.parse(_meta);
+                    string name = meta["name"];
+                    auto module_ptr = SharedObject::lookup(_module_id);
+                    if (!module_ptr)
+                        throw runtime_error("Module not found: " + name);
+                    if (!silent)
+                        cout << "[i] Create service \"" << name << "\"" << endl;
+                    Service::create(meta, module_ptr, _session_admin_ifc).get();
+                    return BK_ERC_OK;
+                } catch (exception &ex) {
+                    cerr << "Unable to create service: " << ex.what() << endl;
+                    exit(EXIT_FAILURE);
+                }
+            },
+            .withdraw = [] (const char *module_id, const char *name)->bk_error_t
+            {
+                return Service::remove_service(name) ? BK_ERC_OK : BK_ERC_NO_SUCH_SERVICE;
+            },
+            .debug = [] (grade_t grade, const char *msg)->void
+            {
+                if (grade == BK_FATAL)
+                    throw runtime_error(msg);
+                if ((::silent) && (grade == BK_DEBUG))
+                    return;
+                auto &stream = ((grade == 'w') || (grade == 'e')) ? cerr : cout;
+                stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
+            }
+        };
+
+        // Loop through the plugins list to load plugins;
         string plugin_root = document["plugin_root"];
         auto plugins = document["plugins"].toArray();
         for_each(plugins.begin(), plugins.end(),  [&] (json meta) {
@@ -155,6 +201,32 @@ int main(int argc, char** argv) {
                 meta.write(oss);
                 module->load(so->id.c_str(), &sys, oss.str().c_str()); 
             }
+        });
+
+        // Loop through the plugins list to start plugins;
+        for_each(SharedObject::container.begin(),
+                 SharedObject::container.end(),  [] (auto &sop) {
+            auto so = sop.second;
+            bk_error_t erc = so->start();
+            if (erc != BK_ERC_OK)
+                throw runtime_error("Error " + to_string(erc) +
+                                    " when starting plugin \"" +
+                                    so->meta["name"].toString() +
+                                    "\"");
+        });
+
+        //TODO: Halt here until quit from admin.
+
+        // Loop through the plugins list to stop plugins;
+        for_each(SharedObject::container.begin(),
+                 SharedObject::container.end(),  [] (auto &sop) {
+            auto so = sop.second;
+            bk_error_t erc = so->stop();
+            if (erc != BK_ERC_OK)
+                throw runtime_error("Error " + to_string(erc) +
+                                    " when stopping plugin \"" +
+                                    so->meta["name"].toString() +
+                                    "\"");
         });
     }
     catch (exception &ex) {

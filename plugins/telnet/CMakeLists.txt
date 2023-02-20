@@ -8,10 +8,12 @@ project(${PROJECT_NAME}
 
 set(SOURCES
     plugin.cpp
+    server.cpp
 )
 
 set(HEADERS
     plugin.hpp
+    server.hpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})

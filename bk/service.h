@@ -15,7 +15,7 @@ enum grade_t {
 struct service_t {
     bk_error_t (*publish)  (const char* module_id, const char* meta,
                             const session_admin_t* session_admin);
-    bool       (*withdraw) (const char* module_id, const char* name);
+    bk_error_t (*withdraw) (const char* module_id, const char* name);
     void       (*debug)    (grade_t grade, const char* text);
 };
 
