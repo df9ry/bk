@@ -49,7 +49,7 @@ public:
     }
     
     const std::string id;
-    jsonx::json       meta;
+    std::string       get_name() const { return meta["name"]; }
 
     SharedObject(jsonx::json meta);
     ~SharedObject();
@@ -66,6 +66,7 @@ public:
     std::string error_text() const { return error; }
 
 private:
+    jsonx::json       meta;
     void*             handle{nullptr};
     std::string       error{};
 

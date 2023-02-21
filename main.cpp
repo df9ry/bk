@@ -1,6 +1,7 @@
 #include "version.h"
 #include "getopt.h"
 #include "so.hpp"
+#include "cli.hpp"
 #include "service.hpp"
 #include "bk/module.h"
 #include "bk/service.h"
@@ -139,8 +140,10 @@ int main(int argc, char** argv) {
             cout << "[i] Config name: \"" << configuration_name << "\"" << endl;
 
         // Create service "sys":
+        json meta;
+        meta["name"] = "sys";
         const Service& sys_service =
-                Service::create_service(document["meta"], nullptr, &sys_sap);
+                Service::create_service(meta, nullptr, &sys_sap);
         service_t sys {
             .publish = [] (const char*            _module_id,
                            const char*            _meta,
@@ -211,11 +214,11 @@ int main(int argc, char** argv) {
             if (erc != BK_ERC_OK)
                 throw runtime_error("Error " + to_string(erc) +
                                     " when starting plugin \"" +
-                                    so->meta["name"].toString() +
+                                    so->get_name() +
                                     "\"");
         });
 
-        //TODO: Halt here until quit from admin.
+        Cli::exec();
 
         // Loop through the plugins list to stop plugins;
         for_each(SharedObject::container.begin(),
@@ -225,9 +228,11 @@ int main(int argc, char** argv) {
             if (erc != BK_ERC_OK)
                 throw runtime_error("Error " + to_string(erc) +
                                     " when stopping plugin \"" +
-                                    so->meta["name"].toString() +
+                                    so->get_name() +
                                     "\"");
         });
+        Service::container.clear();
+        SharedObject::container.clear();
     }
     catch (exception &ex) {
         cerr << "[e] Error: " << ex.what() << "!" << endl;

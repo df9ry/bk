@@ -24,6 +24,8 @@ public:
     typedef std::shared_ptr<Service> Ptr_t;
     typedef std::map<std::string, Ptr_t> Map_t;
 
+    static Map_t container;
+
     Service(const jsonx::json &meta, SharedObject::Ptr_t so, const session_admin_t* sap);
     ~Service();
 
@@ -56,13 +58,12 @@ public:
         return container.erase(name);
     }
 
-    std::string get_name() const { return meta["name"]; }
+    const std::string get_name() const { return meta["name"]; }
+    const SharedObject::Ptr_t get_plugin() const { return so; }
     bk_error_t start();
     bk_error_t stop();
 
 private:
-    static Map_t container;
-
     jsonx::json         meta;
     SharedObject::Ptr_t so;
     session_admin_t     session_admin_ifc{};

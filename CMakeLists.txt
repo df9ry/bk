@@ -18,6 +18,7 @@ set(PUBLIC_HEADERS
 )
 
 set(HEADERS
+    cli.hpp
     getopt.h
     service.hpp
     so.hpp
@@ -25,6 +26,7 @@ set(HEADERS
 )
 
 set(SOURCES
+    cli.cpp
     main.cpp
     getopt.c
     service.cpp
