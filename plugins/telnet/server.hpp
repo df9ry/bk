@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <memory>
 #include <map>
+#include <thread>
 
 class ServerException: public std::runtime_error
 {
@@ -44,6 +45,8 @@ public:
         return container.erase(name);
     }
 
+    int sockFD{-1};
+
     Server(const jsonx::json &meta);
     ~Server();
 
@@ -57,7 +60,10 @@ public:
     bk_error_t stop();
 
 private:
-    jsonx::json         meta;
-    session_admin_t     session_admin_ifc;
+    std::unique_ptr<std::thread> worker{nullptr};
+    void                         run();
+
+    jsonx::json                  meta;
+    session_admin_t              session_admin_ifc;
 };
 #endif // SERVER_HPP

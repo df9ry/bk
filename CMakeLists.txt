@@ -37,6 +37,10 @@ set(EXTRA
     conf.json
 )
 
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+
 add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS} ${EXTRA})
 
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
@@ -69,6 +73,7 @@ else()
         stdc++
         uuid
         dl
+        Threads::Threads
 )
 endif()
 

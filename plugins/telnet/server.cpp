@@ -35,11 +35,14 @@ Server::Server(const json &_meta):
             return BK_ERC_OK;
         }
     }
-{
-}
+{}
 
 Server::~Server()
 {
+    if (sockFD != -1) {
+        close(sockFD);
+        sockFD = -1;
+    }
 }
 
 Server::Ptr_t Server::create(json meta)
@@ -53,7 +56,19 @@ Server::Ptr_t Server::create(json meta)
 bk_error_t Server::start()
 {
     Plugin::info("Start server \"" + get_name() + "\"");
+    worker.reset(new thread([this] () { run(); }));
+    return BK_ERC_OK;
+}
 
+bk_error_t Server::stop()
+{
+    Plugin::info("Stop server \"" + get_name() + "\"");
+    worker.release();
+    return BK_ERC_OK;
+}
+
+void Server::run()
+{
     string port = meta["port"];
     if (port.empty())
         port = "telnet";
@@ -82,7 +97,7 @@ bk_error_t Server::start()
     default:
         Plugin::error("Invalid internet version (ip-v) property: " +
                       to_string(ip_v) + "! Should be 4 or 6.");
-        return BK_ERC_INV_IP_VERSION;
+        return;
     } // end switch //
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags    = AI_PASSIVE;
@@ -93,11 +108,11 @@ bk_error_t Server::start()
     if (gAddRes != 0) {
         Plugin::error("Unable to get address info! Error: " +
                       string(gai_strerror(gAddRes)));
-        return BK_ERC_INV_ADDR_INFO;
+        return;
     }
     if (!info) {
         Plugin::error("No available adress found!");
-        return BK_ERC_NO_ADDR_INFO;
+        return;
     }
 
     void* addr;
@@ -114,16 +129,17 @@ bk_error_t Server::start()
     char ipStr[INET6_ADDRSTRLEN];
     inet_ntop(info->ai_family, addr, ipStr, sizeof(ipStr));
 
-    Plugin::info("Using " + ipVer + ": " + ipStr);
+    Plugin::info("Telnet server \"" + get_name() + "\" using " +
+                 ipVer + ":" + ipStr + ":" + port);
 
     // let's create a new socket, socketFD is returned as descriptor
     // man socket for more information
     // these calls usually return -1 as result of some error
-    int sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+    sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
         Plugin::error("Error while creating socket");
         freeaddrinfo(info);
-        return BK_ERC_SOCKET_ERROR;
+        return;
     }
 
     // Let's bind address to our socket we've just created
@@ -132,7 +148,7 @@ bk_error_t Server::start()
         Plugin::error("Error while binding socket");
         close(sockFD);
         freeaddrinfo(info);
-        return BK_ERC_BIND_ERROR;
+        return;
     }
 
     // finally start listening for connections on our socket
@@ -141,8 +157,10 @@ bk_error_t Server::start()
         std::cerr << "Error while Listening on socket\n";
         close(sockFD);
         freeaddrinfo(info);
-        return BK_ERC_LISTEN_ERROR;
+        return;
     }
+
+    freeaddrinfo(info);
 
     // structure large enough to hold client's address
     sockaddr_storage client_addr;
@@ -166,15 +184,4 @@ bk_error_t Server::start()
         auto bytes_sent = send(newFD, response.data(), response.length(), 0);
         close(newFD);
     }
-
-    close(sockFD);
-    freeaddrinfo(info);
-
-    return BK_ERC_OK;
-}
-
-bk_error_t Server::stop()
-{
-    Plugin::info("Stop server \"" + get_name() + "\"");
-    return BK_ERC_OK;
 }

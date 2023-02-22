@@ -16,6 +16,10 @@ set(HEADERS
     server.hpp
 )
 
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
 target_compile_features(${PROJECT_NAME}
@@ -38,6 +42,7 @@ else()
     target_link_libraries(${PROJECT_NAME}
         JsonX
         stdc++
+        Threads::Threads
 )
 endif()
 
