@@ -9,8 +9,8 @@
             "path": "telnet/libbk_telnet.so", 
             "services":
             [
-                { "name": "admin",    "port": 3000 },
-                { "name": "monitor",  "port": 3001 }
+                { "name": "admin",   "ip-v": 6, "host": "localhost", "port": 3000 },
+                { "name": "monitor", "ip-v": 4, "host": "127.0.0.1", "port": 3001 }
             ]
         }
     ]
