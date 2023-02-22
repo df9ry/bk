@@ -9,7 +9,9 @@ extern "C" {
 #include "error.h"
 
 struct module_t {
-    bk_error_t (*load)  (const char *id, const service_t *sys_service, const char *meta);
+    bk_error_t (*load)  (const char      *id,
+                         const service_t *sys_service,
+                         const char      *meta);
     bk_error_t (*start) ();
     bk_error_t (*stop)  ();
 };

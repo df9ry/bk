@@ -30,14 +30,14 @@ const Service& Service::create_service(json meta, SharedObject::Ptr_t _so, sessi
 }
 
 bk_error_t Service::start() {
+
     //TODO: Use debug interface
-    cout << "[i] Starting service \"" << get_name() << "\"" << endl;
+    cout << "[i] Start service \"" << get_name() << "\"" << endl;
     return BK_ERC_OK;
 }
 
 bk_error_t Service::stop() {
     //TODO: Use debug interface
-    cout << "[i] Stopping service \"" << get_name() << "\"" << endl;
+    cout << "[i] Stop service \"" << get_name() << "\"" << endl;
     return BK_ERC_OK;
 }
-

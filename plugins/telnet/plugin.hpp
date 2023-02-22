@@ -27,11 +27,33 @@ public:
     jsonx::json meta;
 
     static Plugin* constructor(
-            const std::string& id, const service_t *ifc, const jsonx::json& meta)
+        const std::string& id, const service_t *sys_ifc, const jsonx::json& meta)
     {
-        self = new Plugin(id, ifc, meta);
+        self = new Plugin(id, sys_ifc, meta);
         return self;
     }
+
+    static void debug(const std::string& msg) {
+        self->sys_ifc.debug(BK_DEBUG, msg.c_str());
+    }
+
+    static void info(const std::string& msg) {
+        self->sys_ifc.debug(BK_INFO, msg.c_str());
+    }
+
+    static void warning(const std::string& msg) {
+        self->sys_ifc.debug(BK_WARNING, msg.c_str());
+    }
+
+    static void error(const std::string& msg) {
+        self->sys_ifc.debug(BK_ERROR, msg.c_str());
+    }
+
+    static void fatal(const std::string& msg) {
+        self->sys_ifc.debug(BK_FATAL, msg.c_str());
+    }
+
+    const service_t sys_ifc;
 
     ~Plugin() = default;
 
@@ -39,14 +61,14 @@ public:
     Plugin(const Plugin& other) = delete;
     Plugin(Plugin&& other) = delete;
 
+    std::string get_name() const { return meta["name"].toString(); }
     bk_error_t publish_services();
 
 private:
-    Plugin(const std::string& _id, const service_t *_ifc, const jsonx::json& _meta):
-        id{_id}, service_ifc{*_ifc}, meta{_meta}
+    Plugin(const std::string& _id, const service_t *_sys_ifc, const jsonx::json& _meta):
+        id{_id}, sys_ifc{*_sys_ifc}, meta{_meta}
     {}
 
-    service_t service_ifc{};
 };
 
 #endif // _PLUGIN_HPP

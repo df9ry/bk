@@ -1,4 +1,5 @@
 #include "server.hpp"
+#include "plugin.hpp"
 
 using namespace std;
 using namespace jsonx;
@@ -41,9 +42,14 @@ Server::Ptr_t Server::create(json meta)
     return container.emplace(name, new Server(meta)).first->second;
 }
 
-const Server& Server::create_server(json meta) {
-    string name = meta["name"];
-    if (container.contains(name))
-        throw ServerException("Service already defined: " + name);
-    return *container.emplace(name, new Server(meta)).first->second;
+bk_error_t Server::start()
+{
+    Plugin::info("Start server \"" + get_name() + "\"");
+    return BK_ERC_OK;
+}
+
+bk_error_t Server::stop()
+{
+    Plugin::info("Stop server \"" + get_name() + "\"");
+    return BK_ERC_OK;
 }

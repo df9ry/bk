@@ -142,9 +142,8 @@ int main(int argc, char** argv) {
         // Create service "sys":
         json meta;
         meta["name"] = "sys";
-        const Service& sys_service =
-                Service::create_service(meta, nullptr, &sys_sap);
-        service_t sys {
+        auto sys_service = Service::create(meta, nullptr, &sys_sap);
+        service_t sys_ifc {
             .publish = [] (const char*            _module_id,
                            const char*            _meta,
                            const session_admin_t* _session_admin_ifc)->bk_error_t
@@ -182,6 +181,12 @@ int main(int argc, char** argv) {
             }
         };
 
+        bk_error_t erc = sys_service->start();
+        if (erc != BK_ERC_OK)
+            throw runtime_error(
+                    "Error starting sys service failed with error code " +
+                    to_string(erc));
+
         // Loop through the plugins list to load plugins;
         string plugin_root = document["plugin_root"];
         auto plugins = document["plugins"].toArray();
@@ -191,18 +196,19 @@ int main(int argc, char** argv) {
                 plugin_root.append("/").append(path)
             );
             if (!silent)
-                cout << "[i] Loading " << plugin_path << endl;
+                cout << "[i] Load " << plugin_path << endl;
             auto so = SharedObject::create(plugin_path, meta);
             // Bind and call the load method of the plugin:
-            const module_t* module = static_cast<module_t*>(so->getsym("module"));
-            if (!module)
+            const module_t* module_ptr = static_cast<module_t*>(so->getsym("module"));
+            if (!module_ptr)
                 throw runtime_error("Import error in " 
                         + string(plugin_path.c_str()) 
                         + ": Error: " + so->error_text());
-            if (module->load) {
+            so->module_ifc = *module_ptr;
+            if (module_ptr->load) {
                 ostringstream oss;
                 meta.write(oss);
-                module->load(so->id.c_str(), &sys, oss.str().c_str()); 
+                module_ptr->load(so->id.c_str(), &sys_ifc, oss.str().c_str());
             }
         });
 
@@ -221,8 +227,8 @@ int main(int argc, char** argv) {
         Cli::exec();
 
         // Loop through the plugins list to stop plugins;
-        for_each(SharedObject::container.begin(),
-                 SharedObject::container.end(),  [] (auto &sop) {
+        for_each(SharedObject::container.rbegin(),
+                 SharedObject::container.rend(),  [] (auto &sop) {
             auto so = sop.second;
             bk_error_t erc = so->stop();
             if (erc != BK_ERC_OK)
@@ -231,6 +237,11 @@ int main(int argc, char** argv) {
                                     so->get_name() +
                                     "\"");
         });
+        erc = sys_service->stop();
+        if (erc != BK_ERC_OK)
+            throw runtime_error(
+                    "Error stopping sys service failed with error code " +
+                    to_string(erc));
         Service::container.clear();
         SharedObject::container.clear();
     }

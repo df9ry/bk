@@ -25,11 +25,11 @@ bk_error_t Plugin::publish_services()
         stringstream oss;
         service.write(oss);
         auto server = Server::create(service);
-        bk_error_t erc = service_ifc.publish(id.c_str(),
+        bk_error_t erc = sys_ifc.publish(id.c_str(),
                                              oss.str().c_str(),
                                              server->get_session_admin());
         if (erc != BK_ERC_OK)
-            service_ifc.debug(BK_FATAL, (
+            sys_ifc.debug(BK_FATAL, (
                                   "Unable to publish service \"" +
                                   service["name"].toString() +
                                   "\"!. ERC = " +
@@ -40,7 +40,9 @@ bk_error_t Plugin::publish_services()
 
 extern "C" {
     module_t module {
-        .load  = [] (const char *id, const service_t *sys, const char *meta)->bk_error_t
+        .load  = [] (const char *id,
+                     const service_t *sys,
+                     const char *meta)->bk_error_t
         {
             if (!id)
                 return BK_ERC_NO_ID;
@@ -58,12 +60,36 @@ extern "C" {
                 return Plugin::constructor(id, sys, _meta)->publish_services();
             }
             catch(const runtime_error &ex) {
-                sys->debug(BK_FATAL, ex.what());
+                Plugin::fatal(ex.what());
                 return BK_ERC_PUBLISH;
             }
             return BK_ERC_OK;
         },
-        .start = [] ()->bk_error_t { return BK_ERC_OK; },
-        .stop  = [] ()->bk_error_t { return BK_ERC_OK; }
+        .start = [] ()->bk_error_t {
+            Plugin::info("Start plugin \"" + Plugin::self->get_name() + "\"");
+            // Start all server:
+            for_each(Server::container.begin(), Server::container.end(), [] (auto &pair)
+            {
+                auto server = pair.second;
+                bk_error_t erc = server->start();
+                if (erc != BK_ERC_OK)
+                    Plugin::fatal("Start plugin \"" + Plugin::self->get_name() + "\" " +
+                         "failed with error code " + to_string(erc));
+            });
+            return BK_ERC_OK;
+        },
+        .stop  = [] ()->bk_error_t {
+            // Stop all server:
+            for_each(Server::container.begin(), Server::container.end(), [] (auto &pair)
+            {
+                auto server = pair.second;
+                bk_error_t erc = server->stop();
+                if (erc != BK_ERC_OK)
+                    Plugin::fatal("Stop plugin \"" + Plugin::self->get_name() + "\" " +
+                         "failed with error code " + to_string(erc));
+            });
+            Plugin::info("Stop plugin \"" + Plugin::self->get_name() + "\"");
+            return BK_ERC_OK;
+        }
     };
 } // end extern C //

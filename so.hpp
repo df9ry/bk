@@ -10,6 +10,7 @@
 #include <jsonx.hpp>
 
 #include "bk/error.h"
+#include "bk/module.h"
 
 class SharedObjectException: public std::runtime_error
 {
@@ -42,14 +43,12 @@ public:
 
     static Ptr_t create(std::filesystem::path, jsonx::json meta);
 
-    static const SharedObject& create_so(std::filesystem::path, jsonx::json meta);
-
     static bool drop(const std::string &id) {
         return container.erase(id);
     }
     
     const std::string id;
-    std::string       get_name() const { return meta["name"]; }
+    std::string get_name() const { return meta["name"]; }
 
     SharedObject(jsonx::json meta);
     ~SharedObject();
@@ -57,6 +56,8 @@ public:
     SharedObject() = delete;
     SharedObject(const SharedObject& other) = delete;
     SharedObject(SharedObject&& other) = delete;
+
+    module_t module_ifc{};
 
     bool load(const std::string &path);
     void* getsym(const std::string &name);
