@@ -60,8 +60,6 @@ public:
 
     const std::string get_name() const { return meta["name"]; }
     const SharedObject::Ptr_t get_plugin() const { return so; }
-    bk_error_t start();
-    bk_error_t stop();
 
 private:
     jsonx::json         meta;

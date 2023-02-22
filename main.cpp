@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
     int   option{0};
 
     filesystem::path cwd = filesystem::path(argv[0]).parent_path();
-    filesystem::path config_file_name = cwd.append("bk.conf");
+    filesystem::path config_file_name = cwd.append("conf.json");
 
     // Get options:
     while ((option = getopt(argc, argv, "c:hv")) >= 0) {
@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
                     if (!module_ptr)
                         throw runtime_error("Module not found: " + name);
                     if (!silent)
-                        cout << "[i] Create service \"" << name << "\"" << endl;
+                        cout << "[d] Create service \"" << name << "\"" << endl;
                     Service::create(meta, module_ptr, _session_admin_ifc).get();
                     return BK_ERC_OK;
                 } catch (exception &ex) {
@@ -180,12 +180,6 @@ int main(int argc, char** argv) {
                 stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
             }
         };
-
-        bk_error_t erc = sys_service->start();
-        if (erc != BK_ERC_OK)
-            throw runtime_error(
-                    "Error starting sys service failed with error code " +
-                    to_string(erc));
 
         // Loop through the plugins list to load plugins;
         string plugin_root = document["plugin_root"];
@@ -237,11 +231,6 @@ int main(int argc, char** argv) {
                                     so->get_name() +
                                     "\"");
         });
-        erc = sys_service->stop();
-        if (erc != BK_ERC_OK)
-            throw runtime_error(
-                    "Error stopping sys service failed with error code " +
-                    to_string(erc));
         Service::container.clear();
         SharedObject::container.clear();
     }

@@ -80,7 +80,8 @@ extern "C" {
         },
         .stop  = [] ()->bk_error_t {
             // Stop all server:
-            for_each(Server::container.begin(), Server::container.end(), [] (auto &pair)
+            for_each(Server::container.rbegin(), Server::container.rend(),
+                     [] (auto &pair)
             {
                 auto server = pair.second;
                 bk_error_t erc = server->stop();

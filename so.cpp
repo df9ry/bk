@@ -79,4 +79,3 @@ bk_error_t SharedObject::stop()
 {
     return module_ifc.stop();
 }
-

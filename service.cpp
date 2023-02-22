@@ -29,15 +29,3 @@ const Service& Service::create_service(json meta, SharedObject::Ptr_t _so, sessi
     return *container.emplace(name, new Service(meta, _so, _sap)).first->second;
 }
 
-bk_error_t Service::start() {
-
-    //TODO: Use debug interface
-    cout << "[i] Start service \"" << get_name() << "\"" << endl;
-    return BK_ERC_OK;
-}
-
-bk_error_t Service::stop() {
-    //TODO: Use debug interface
-    cout << "[i] Stop service \"" << get_name() << "\"" << endl;
-    return BK_ERC_OK;
-}
