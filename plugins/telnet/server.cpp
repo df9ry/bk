@@ -2,6 +2,7 @@
 #include "plugin.hpp"
 
 #include <cstring>
+#include <functional>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -179,9 +180,12 @@ void Server::run()
             continue;
         }
 
-        const std::string response = "Hello World\n";
-        // send call sends the data you specify as second param and it's length as 3rd param, also returns how many bytes were actually sent
-        auto bytes_sent = send(newFD, response.data(), response.length(), 0);
-        close(newFD);
+        auto session_ptr = Session::create(*this, newFD);
+        // Find a slot in the sessions container or create a new one:
+        auto iter = find(sessions.begin(), sessions.end(), nullptr);
+        if (iter == sessions.end())
+            sessions.push_back(session_ptr);
+        else
+            *iter = session_ptr;
     }
 }

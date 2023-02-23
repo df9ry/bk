@@ -1,6 +1,8 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include "session.hpp"
+
 #include <bk/session.h>
 
 #include <jsonx.hpp>
@@ -65,5 +67,6 @@ private:
 
     jsonx::json                  meta;
     session_admin_t              session_admin_ifc;
+    std::vector<Session::Ptr_t>  sessions{};
 };
 #endif // SERVER_HPP

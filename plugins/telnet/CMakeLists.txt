@@ -9,11 +9,13 @@ project(${PROJECT_NAME}
 set(SOURCES
     plugin.cpp
     server.cpp
+    session.cpp
 )
 
 set(HEADERS
     plugin.hpp
     server.hpp
+    session.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
