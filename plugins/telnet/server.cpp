@@ -134,7 +134,7 @@ void Server::run()
     // these calls usually return -1 as result of some error
     int sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
-        Plugin::error("Error while creating socket");
+        Plugin::fatal("Error while creating socket");
         freeaddrinfo(info);
         return;
     }
@@ -142,7 +142,7 @@ void Server::run()
     // Let's bind address to our socket we've just created
     int bindR = bind(sockFD, info->ai_addr, info->ai_addrlen);
     if (bindR == -1) {
-        Plugin::error("Error while binding socket");
+        Plugin::fatal("Error while binding socket");
         ::close(sockFD);
         freeaddrinfo(info);
         return;
@@ -151,7 +151,7 @@ void Server::run()
     // finally start listening for connections on our socket
     int listenR = listen(sockFD, backLog);
     if (listenR == -1) {
-        std::cerr << "Error while Listening on socket\n";
+        Plugin::fatal("Error while Listening on socket\n");
         ::close(sockFD);
         freeaddrinfo(info);
         return;
@@ -167,7 +167,6 @@ void Server::run()
     // this will take client connections one at a time
     // in further examples, we're going to use fork() call for each client connection
     while (true) {
-
         // accept call will give us a new socket descriptor
         int newFD
           = accept(sockFD, (sockaddr *) &client_addr, &client_addr_size);
@@ -175,7 +174,6 @@ void Server::run()
             Plugin::error("Error while Accepting on socket");
             continue;
         }
-
         auto session_ptr = Session::create(*this, newFD, ++session_id);
         // Find a slot in the sessions container or create a new one:
         auto iter = find_if(sessions.begin(), sessions.end(),

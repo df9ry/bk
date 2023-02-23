@@ -6,8 +6,10 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <atomic>
 
 class Server;
+class telnet_t;
 
 class Session
 {
@@ -22,20 +24,26 @@ public:
     Session(const Session& other) = delete;
     Session(Session&& other) = delete;
 
-    std::string name() const;
+    std::string       name() const;
 
-    const int     id;
-    Server&       server;
+    const int         id;
+    Server&           server;
+    std::atomic<bool> quit{true};
 
-    bk_error_t    open();
-    void          close();
+    bk_error_t        open();
+    void              close();
+
+    void              input( const char* pb, const size_t cb);
+    void              output(const char* pb, const size_t cb);
 
 private:
     Session(Server& server, int fD, int id);
 
+    const std::atomic<int>       fD;
+    telnet_t*                    telnet;
     std::unique_ptr<std::thread> reader{nullptr};
+
     void                         run();
-    const int                    fD;
 };
 
 #endif // SESSION_HPP

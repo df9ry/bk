@@ -44,6 +44,7 @@ else()
     target_link_libraries(${PROJECT_NAME}
         JsonX
         stdc++
+        telnet
         Threads::Threads
 )
 endif()
