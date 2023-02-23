@@ -2,7 +2,7 @@
 #include "plugin.hpp"
 
 #include <cstring>
-#include <functional>
+#include <algorithm>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -40,10 +40,6 @@ Server::Server(const json &_meta):
 
 Server::~Server()
 {
-    if (sockFD != -1) {
-        close(sockFD);
-        sockFD = -1;
-    }
 }
 
 Server::Ptr_t Server::create(json meta)
@@ -136,7 +132,7 @@ void Server::run()
     // let's create a new socket, socketFD is returned as descriptor
     // man socket for more information
     // these calls usually return -1 as result of some error
-    sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+    int sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
         Plugin::error("Error while creating socket");
         freeaddrinfo(info);
@@ -147,7 +143,7 @@ void Server::run()
     int bindR = bind(sockFD, info->ai_addr, info->ai_addrlen);
     if (bindR == -1) {
         Plugin::error("Error while binding socket");
-        close(sockFD);
+        ::close(sockFD);
         freeaddrinfo(info);
         return;
     }
@@ -156,7 +152,7 @@ void Server::run()
     int listenR = listen(sockFD, backLog);
     if (listenR == -1) {
         std::cerr << "Error while Listening on socket\n";
-        close(sockFD);
+        ::close(sockFD);
         freeaddrinfo(info);
         return;
     }
@@ -180,12 +176,23 @@ void Server::run()
             continue;
         }
 
-        auto session_ptr = Session::create(*this, newFD);
+        auto session_ptr = Session::create(*this, newFD, ++session_id);
         // Find a slot in the sessions container or create a new one:
-        auto iter = find(sessions.begin(), sessions.end(), nullptr);
+        auto iter = find_if(sessions.begin(), sessions.end(),
+                            [](const auto &sp)->bool { return (!sp); });
         if (iter == sessions.end())
             sessions.push_back(session_ptr);
         else
             *iter = session_ptr;
+        // Start session:
+        session_ptr->open();
     }
+}
+
+void Server::close(Session* session)
+{
+    auto iter = find_if(sessions.begin(), sessions.end(),
+                    [session](const auto &sp)->bool { return (session == sp.get()); });
+    if (iter != sessions.end())
+        *iter = nullptr;
 }

@@ -47,8 +47,6 @@ public:
         return container.erase(name);
     }
 
-    int sockFD{-1};
-
     Server(const jsonx::json &meta);
     ~Server();
 
@@ -60,6 +58,7 @@ public:
     const session_admin_t* get_session_admin() const { return &session_admin_ifc; }
     bk_error_t start();
     bk_error_t stop();
+    void close(Session* session);
 
 private:
     std::unique_ptr<std::thread> worker{nullptr};
@@ -68,5 +67,6 @@ private:
     jsonx::json                  meta;
     session_admin_t              session_admin_ifc;
     std::vector<Session::Ptr_t>  sessions{};
+    int                          session_id{0};
 };
 #endif // SERVER_HPP
