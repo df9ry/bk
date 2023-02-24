@@ -54,7 +54,7 @@ public:
     }
 
     static void dump(const std::string& msg, const char* pb, size_t cb) {
-        self->sys_ifc.dump(("telnet:" + msg).c_str(), pb, cb);
+        self->sys_ifc.dump(("agw:" + msg).c_str(), pb, cb);
     }
 
     const service_t sys_ifc;

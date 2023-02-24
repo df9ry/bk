@@ -12,6 +12,14 @@
                 { "name": "admin",   "ip-v": 6, "host": "localhost", "port": 3000 },
                 { "name": "monitor", "ip-v": 4, "host": "localhost", "port": 3001 }
             ]
-        }
+        },
+        {
+            "name": "agw",
+            "path": "agw/libbk_agw.so",
+            "services":
+            [
+                { "name": "agw", "ip-v": 4, "host": "localhost", "port": 8000 }
+            ]
+        },
     ]
 }

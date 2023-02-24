@@ -112,11 +112,5 @@ void Session::output(const char* pb, const size_t cb)
 
 void Session::input(const char* pb, const size_t cb)
 {
-    char buffer[cb+1];
-    memcpy(buffer, pb, cb);
-    for (size_t i = 0; i < cb; ++i)
-        if (!isprint(buffer[i]))
-            buffer[i] = '~';
-    buffer[cb] = '\0';
-    Plugin::debug("Telnet " + name() + " receive: \"" + buffer + "\"");
+    Plugin::dump("RX", pb, cb);
 }

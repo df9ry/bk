@@ -9,6 +9,7 @@ project(${PROJECT_NAME}
 
 configure_file(version.hpp.in version.h)
 add_subdirectory("plugins/telnet")
+add_subdirectory("plugins/agw")
 
 set(PUBLIC_HEADERS
     bk/error.h

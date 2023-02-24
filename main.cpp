@@ -10,6 +10,7 @@
 #include <jsonx.hpp>
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -18,6 +19,7 @@
 #include <exception>
 #include <cassert>
 #include <cstring>
+#include <cctype>
 
 using namespace std;
 using namespace jsonx;
@@ -178,13 +180,42 @@ int main(int argc, char** argv) {
                     return;
                 auto &stream = ((grade == 'w') || (grade == 'e')) ? cerr : cout;
                 stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
+            },
+            .dump = [] (const char *text, const char *pb, size_t cb)->void
+            {
+                cerr << text << ": ";
+                const auto MAX_L = 40UL; // Max no. of bytes in a line
+
+                const char* _pb{pb};
+                size_t _cb{cb};
+
+                while (_cb) {
+                    auto __pb = _pb;
+                    auto l{min(MAX_L, _cb)};
+                    for (auto i{l}; i > 0; --i, ++__pb) {
+                        int x = static_cast<int>(*__pb);
+                        cerr << hex << setw(2) << setfill('0') << x << " ";
+                    } // end for //
+                    cerr << "[";
+                    __pb = _pb;
+                    for (auto i{l}; i > 0; --i, ++__pb) {
+                        char c = static_cast<char>(*__pb);
+                        cerr << (isprint(c) ? c : '.');
+                    } // end for //
+                    cerr << "]" << endl;
+                    _pb += l;
+                    _cb -= l;
+                    if (_cb)
+                        for (auto i = strlen(text) + 2; i > 0; --i)
+                            cerr << " ";
+                } // end while //
             }
         };
 
         // Loop through the plugins list to load plugins;
-        string plugin_root = document["plugin_root"];
         auto plugins = document["plugins"].toArray();
         for_each(plugins.begin(), plugins.end(),  [&] (json meta) {
+            string plugin_root = document["plugin_root"];
             filesystem::path path = meta["path"].toString();
             filesystem::path plugin_path = filesystem::weakly_canonical(
                 plugin_root.append("/").append(path)

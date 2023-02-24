@@ -17,6 +17,7 @@ struct service_t {
                             const session_admin_t* session_admin);
     bk_error_t (*withdraw) (const char* module_id, const char* name);
     void       (*debug)    (grade_t grade, const char* text);
+    void       (*dump)     (const char* text, const char* pb, size_t cb);
 };
 
 #ifdef __cplusplus
