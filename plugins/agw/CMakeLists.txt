@@ -13,6 +13,7 @@ set(SOURCES
 )
 
 set(HEADERS
+    agw_struct.hpp
     plugin.hpp
     server.hpp
     session.hpp

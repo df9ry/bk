@@ -3,10 +3,13 @@
 
 #include <bk/error.h>
 
+#include <jsonx.hpp>
+
 #include <memory>
 #include <string>
 #include <thread>
 #include <atomic>
+#include <vector>
 
 class Server;
 
@@ -40,8 +43,13 @@ private:
 
     const std::atomic<int>       fD;
     std::unique_ptr<std::thread> reader{nullptr};
+    std::vector<char>            rx_buffer{};
+    bool                         have_header{false};
+    size_t                       data_size{0};
+    jsonx::json                  frame_meta{};
 
     void                         run();
+    void                         receive(const char* pb, size_t cb);
 };
 
 #endif // SESSION_HPP

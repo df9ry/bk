@@ -184,6 +184,10 @@ int main(int argc, char** argv) {
             .dump = [] (const char *text, const char *pb, size_t cb)->void
             {
                 cerr << text << ": ";
+                if (!cb) {
+                    cerr << endl;
+                    return;
+                }
                 const auto MAX_L = 40UL; // Max no. of bytes in a line
 
                 const char* _pb{pb};
