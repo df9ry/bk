@@ -21,7 +21,8 @@
                 { "name": "agw", "ip-v": 4, "host": "localhost", "port": 8000,
                   "ver_major": 1000, "ver_minor": 1, "axports":
                   [
-                    { "description": "Test port" }
+                    { "description": "Test Port" },
+                    { "description": "Zweiter Port" }
                   ]
                 }
             ]

@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include "session.hpp"
+#include "port.hpp"
 
 #include <bk/session.h>
 
@@ -53,6 +54,8 @@ public:
     Server() = delete;
     Server(const Server& other) = delete;
     Server(Server&& other) = delete;
+
+    std::vector<Port::Ptr_t> ports{};
 
     std::string get_name() const { return meta["name"]; }
     const session_admin_t* get_session_admin() const { return &session_admin_ifc; }

@@ -197,8 +197,9 @@ int main(int argc, char** argv) {
                     auto __pb = _pb;
                     auto l{min(MAX_L, _cb)};
                     for (auto i{l}; i > 0; --i, ++__pb) {
-                        int x = static_cast<int>(*__pb);
-                        cerr << hex << setw(2) << setfill('0') << x << " ";
+                        uint8_t x = static_cast<uint8_t>(*__pb);
+                        cerr << hex << setw(2) << setfill('0')
+                             << static_cast<int>(x) << " ";
                     } // end for //
                     cerr << "[";
                     __pb = _pb;

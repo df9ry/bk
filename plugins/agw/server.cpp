@@ -1,5 +1,6 @@
 #include "server.hpp"
 #include "plugin.hpp"
+#include "utils.hpp"
 
 #include <cstring>
 #include <algorithm>
@@ -53,6 +54,14 @@ Server::Ptr_t Server::create(json meta)
 bk_error_t Server::start()
 {
     Plugin::info("Start server \"" + get_name() + "\"");
+
+    Plugin::debug("XX: " + meta_2_string(meta));
+    auto ports_meta = meta["axports"].toArray();
+    for_each(ports_meta.begin(), ports_meta.end(), [this] (const auto &port_meta) {
+        Port::Ptr_t port = Port::create(*this, ports.size(), port_meta);
+        ports.push_back(port);
+    });
+
     worker.reset(new thread([this] () { run(); }));
     return BK_ERC_OK;
 }

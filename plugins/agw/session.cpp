@@ -42,11 +42,6 @@ bk_error_t Session::open(const json &_meta)
 {
     Plugin::info("Open agw session \"" + name() + "\"");
     meta = _meta;
-    auto ports_meta = meta["axports"].toArray();
-    for_each(ports_meta.begin(), ports_meta.end(), [this] (const auto &port_meta) {
-        Port::Ptr_t port = Port::create(*this, ports.size(), port_meta);
-        ports.push_back(port);
-    });
     reader.reset(new thread([this] () { run(); }));
     reader->detach();
     return BK_ERC_OK;
@@ -71,24 +66,14 @@ void Session::run()
     server.close(this);
 }
 
-void Session::output(const char* pb, const size_t cb)
+void Session::transmit(const char* pb, const size_t cb)
 {
+    Plugin::dump("TX:", pb, cb);
     auto cbSent = ::send(fD, pb, cb, 0);
     if (cbSent != cb) {
         Plugin::error("AGW " + name() + ": Error sending data");
         quit = true;
     }
-}
-
-void Session::input(const char* pb, const size_t cb)
-{
-    char buffer[cb+1];
-    memcpy(buffer, pb, cb);
-    for (size_t i = 0; i < cb; ++i)
-        if (!isprint(buffer[i]))
-            buffer[i] = '~';
-    buffer[cb] = '\0';
-    Plugin::debug("AGW " + name() + " receive: \"" + buffer + "\"");
 }
 
 void Session::receive(const char* pb, size_t cb)
@@ -122,6 +107,7 @@ void Session::receive(const char* pb, size_t cb)
 
 void Session::receive(const json& meta, const char* pb, size_t cb)
 {
+    Plugin::dump("RX:" + meta_2_string(meta), pb, cb);
     switch (string_2_kind(meta["kind"])) {
     case VERSION:
         version();
@@ -145,6 +131,7 @@ void Session::receive(const json& meta, const char* pb, size_t cb)
         break;
     } // end switch //
     int port_no = meta["port"];
+#if 0
     if (port_no >= ports.size()) {
         Plugin::error("Received message for undefined port "
                       + to_string(port_no));
@@ -152,6 +139,7 @@ void Session::receive(const json& meta, const char* pb, size_t cb)
         return;
     }
     ports.at(port_no)->receive(meta, pb, cb);
+#endif
 }
 
 void Session::register_call(const string &call)
@@ -177,7 +165,7 @@ void Session::register_call(const string &call)
     frame.structured.header.kind = REGISTER_CALL;
     frame.structured.header.data_length = sizeof(uint8_t);
     frame.structured.result = result;
-    output(frame.flat, sizeof(frame.flat));
+    transmit(frame.flat, sizeof(frame.flat));
 }
 
 void Session::unregister_call(const string &call)
@@ -203,7 +191,7 @@ void Session::unregister_call(const string &call)
    frame.structured.header.kind = UNREGISTER_CALL;
    frame.structured.header.data_length = sizeof(uint8_t);
    frame.structured.result = result;
-   output(frame.flat, sizeof(frame.flat));
+   transmit(frame.flat, sizeof(frame.flat));
 }
 
 void Session::port_info()
@@ -211,12 +199,13 @@ void Session::port_info()
     string info;
     {
         stringstream ss;
-        ss << ports.size();
-        for_each(ports.begin(), ports.end(), [&ss] (const auto &port) {
+        ss << server.ports.size();
+        for_each(server.ports.begin(), server.ports.end(), [&ss] (const auto &port) {
             string description = port->meta["description"];
             replace( description.begin(), description.end(), ';', '~');
             ss << ";" << description;
         }); // end for_each //
+        ss << ";";
         info = ss.str();
     }
     vector<char> frame;
@@ -229,7 +218,7 @@ void Session::port_info()
         frame.insert(frame.end(), p_header, p_header + sizeof(header));
     }
     frame.insert(frame.end(), info.begin(), info.end());
-    output(frame.data(), frame.size());
+    transmit(frame.data(), frame.size());
 }
 
 void Session::version()
@@ -248,5 +237,5 @@ void Session::version()
     frame.structured.header.data_length = 2 * sizeof(uint32_t);
     frame.structured.major = meta["ver_major"].toInt();
     frame.structured.minor = meta["ver_minor"].toInt();
-    output(frame.flat, sizeof(frame.flat));
+    transmit(frame.flat, sizeof(frame.flat));
 }

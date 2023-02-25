@@ -1,10 +1,15 @@
 #include "port.hpp"
-#include "session.hpp"
+#include "server.hpp"
+#include "plugin.hpp"
 #include "utils.hpp"
 
-Port::Ptr_t Port::create(Session& session, int id, const jsonx::json &meta)
+using namespace std;
+
+Port::Ptr_t Port::create(Server& server, int id, const jsonx::json &meta)
 {
-   return Ptr_t(new Port(session, id, meta));
+    auto port = Ptr_t(new Port(server, id, meta));
+    Plugin::info("Creating port \"" + port->name() + "\"");
+    return port;
 }
 
 void Port::receive(const jsonx::json &meta, const char *pb, size_t cb)
@@ -18,6 +23,11 @@ void Port::receive(const jsonx::json &meta, const char *pb, size_t cb)
 Port::~Port()
 {}
 
-Port::Port(Session& _session, int _id, const jsonx::json &_meta):
-    session{_session}, id{_id}, meta{_meta}
+Port::Port(Server& _server, int _id, const jsonx::json &_meta):
+    server{_server}, id{_id}, meta{_meta}
 {}
+
+string Port::name() const
+{
+    return server.get_name() + "/" + to_string(id);
+}

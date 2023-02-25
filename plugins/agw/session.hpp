@@ -1,8 +1,6 @@
 #ifndef SESSION_HPP
 #define SESSION_HPP
 
-#include "port.hpp"
-
 #include <bk/error.h>
 
 #include <jsonx.hpp>
@@ -38,9 +36,6 @@ public:
     bk_error_t        open(const jsonx::json &meta);
     void              close();
 
-    void              input( const char* pb, const size_t cb);
-    void              output(const char* pb, const size_t cb);
-
     bool              use_raw_frames() const { return raw_frames; }
     bool              do_monitor() const { return monitor; }
 
@@ -50,7 +45,6 @@ private:
     const std::atomic<int>       fD;
     jsonx::json                  meta{};
 
-    std::vector<Port::Ptr_t>     ports{};
     std::unique_ptr<std::thread> reader{nullptr};
     std::vector<char>            rx_buffer{};
     bool                         have_header{false};
@@ -60,6 +54,7 @@ private:
     bool                         monitor{false};
 
     void                         run();
+    void                         transmit(const char* pb, const size_t cb);
     void                         receive(const char* pb, size_t cb);
     void                         receive(const jsonx::json &meta,
                                          const char* pb, size_t cb);

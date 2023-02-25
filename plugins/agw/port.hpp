@@ -5,14 +5,14 @@
 
 #include <memory>
 
-class Session;
+class Server;
 
 class Port
 {
 public:
     typedef std::shared_ptr<Port> Ptr_t;
 
-    static Ptr_t create(Session& session, int id, const jsonx::json &meta);
+    static Ptr_t create(Server& server, int id, const jsonx::json &meta);
 
     ~Port();
 
@@ -21,13 +21,14 @@ public:
     Port(Port&& other) = delete;
 
     void receive(const jsonx::json &meta, const char *pb, size_t cb);
+    std::string name() const;
 
     const int   id;
-    Session&    session;
+    Server&     server;
     jsonx::json meta;
 
 private:
-    Port(Session& session, int id, const jsonx::json& meta);
+    Port(Server& server, int id, const jsonx::json& meta);
 };
 
 #endif // PORT_HPP

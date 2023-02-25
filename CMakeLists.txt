@@ -44,10 +44,10 @@ find_package(Threads REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${PUBLIC_HEADERS} ${HEADERS} ${EXTRA})
 
-add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/conf.json
-        ${CMAKE_CURRENT_BINARY_DIR}
+        "${CMAKE_SOURCE_DIR}/conf.json"
+        "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
