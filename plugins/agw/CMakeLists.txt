@@ -8,6 +8,7 @@ project(${PROJECT_NAME}
 
 set(SOURCES
     plugin.cpp
+    port.cpp
     server.cpp
     session.cpp
 )
@@ -15,8 +16,10 @@ set(SOURCES
 set(HEADERS
     agw_struct.hpp
     plugin.hpp
+    port.hpp
     server.hpp
     session.hpp
+    utils.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

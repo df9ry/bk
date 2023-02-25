@@ -183,7 +183,7 @@ void Server::run()
         else
             *iter = session_ptr;
         // Start session:
-        session_ptr->open();
+        session_ptr->open(meta);
     }
 }
 

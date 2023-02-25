@@ -2,6 +2,7 @@
 #include "server.hpp"
 #include "plugin.hpp"
 #include "agw_struct.hpp"
+#include "utils.hpp"
 
 #include <jsonx.hpp>
 
@@ -13,29 +14,6 @@
 
 using namespace std;
 using namespace jsonx;
-
-static string char_2_string(char c)
-{
-    char buf[2];
-    buf[0] = c;
-    buf[1] = '\0';
-    return string(buf);
-}
-
-static string buf10_2_string(const char *buf10)
-{
-    char buf[11] {0};
-    memcpy(buf, buf10, 10);
-    buf[10] = '\0';
-    return string(buf);
-}
-
-static string meta_2_string(const json &meta)
-{
-    stringstream oss;
-    oss << meta;
-    return oss.str();
-}
 
 Session::Session(Server& _server, int _fD, int _id):
     server{_server}, fD{_fD}, id{_id}
@@ -60,9 +38,15 @@ string Session::name() const
     return server.get_name() + "/" + to_string(id);
 }
 
-bk_error_t Session::open()
+bk_error_t Session::open(const json &_meta)
 {
     Plugin::info("Open agw session \"" + name() + "\"");
+    meta = _meta;
+    auto ports_meta = meta["axports"].toArray();
+    for_each(ports_meta.begin(), ports_meta.end(), [this] (const auto &port_meta) {
+        Port::Ptr_t port = Port::create(*this, ports.size(), port_meta);
+        ports.push_back(port);
+    });
     reader.reset(new thread([this] () { run(); }));
     reader->detach();
     return BK_ERC_OK;
@@ -129,9 +113,140 @@ void Session::receive(const char* pb, size_t cb)
             have_header = true;
         }
         if (size >= sizeof(agw_header_t) + data_size) {
-            Plugin::dump("RX: " + meta_2_string(frame_meta), &rx_buffer[sizeof(agw_header_t)], data_size);
+            receive(frame_meta, &rx_buffer[sizeof(agw_header_t)], data_size);
             rx_buffer.erase(rx_buffer.begin(), rx_buffer.begin() + sizeof(agw_header_t) + data_size);
             have_header = false;
         }
     } // end while //
+}
+
+void Session::receive(const json& meta, const char* pb, size_t cb)
+{
+    switch (string_2_kind(meta["kind"])) {
+    case VERSION:
+        version();
+        return;
+    case RAW_SWITCH:
+        raw_frames = !raw_frames;
+        return;
+    case MONITOR:
+        monitor = !monitor;
+        return;
+    case REGISTER_CALL:
+        register_call(meta["from"]);
+        return;
+    case UNREGISTER_CALL:
+        unregister_call(meta["from"]);
+        return;
+    case PORT_INFO:
+        port_info();
+        return;
+    default:
+        break;
+    } // end switch //
+    int port_no = meta["port"];
+    if (port_no >= ports.size()) {
+        Plugin::error("Received message for undefined port "
+                      + to_string(port_no));
+        Plugin::dump(meta_2_string(meta), pb, cb);
+        return;
+    }
+    ports.at(port_no)->receive(meta, pb, cb);
+}
+
+void Session::register_call(const string &call)
+{
+    uint8_t result;
+    if (calls.contains(call)) {
+        Plugin::warning("Call " + call + " already registered");
+        result = 0;
+    } else {
+        Plugin::debug("Register call " + call);
+        calls.insert(call);
+        result = 1;
+    }
+    struct __attribute__((__packed__)) port_info_reply_t {
+        agw_header_t header;
+        uint8_t      result;
+    };
+    union __attribute__((__packed__)) {
+        port_info_reply_t structured;
+        char flat[sizeof(port_info_reply_t)];
+    } frame;
+    ::memset(frame.flat, 0x00, sizeof(frame.flat));
+    frame.structured.header.kind = REGISTER_CALL;
+    frame.structured.header.data_length = sizeof(uint8_t);
+    frame.structured.result = result;
+    output(frame.flat, sizeof(frame.flat));
+}
+
+void Session::unregister_call(const string &call)
+{
+    uint8_t result;
+   if (calls.contains(call)) {
+        Plugin::debug("Unregister call " + call);
+        calls.extract(call);
+        result = 1;
+    } else {
+        Plugin::warning("Call " + call + " not registered");
+        result = 0;
+    }
+   struct __attribute__((__packed__)) port_info_reply_t {
+       agw_header_t header;
+       uint8_t      result;
+   };
+   union __attribute__((__packed__)) {
+       port_info_reply_t structured;
+       char flat[sizeof(port_info_reply_t)];
+   } frame;
+   ::memset(frame.flat, 0x00, sizeof(frame.flat));
+   frame.structured.header.kind = UNREGISTER_CALL;
+   frame.structured.header.data_length = sizeof(uint8_t);
+   frame.structured.result = result;
+   output(frame.flat, sizeof(frame.flat));
+}
+
+void Session::port_info()
+{
+    string info;
+    {
+        stringstream ss;
+        ss << ports.size();
+        for_each(ports.begin(), ports.end(), [&ss] (const auto &port) {
+            string description = port->meta["description"];
+            replace( description.begin(), description.end(), ';', '~');
+            ss << ";" << description;
+        }); // end for_each //
+        info = ss.str();
+    }
+    vector<char> frame;
+    {
+        agw_header_t header;
+        ::memset(&header, 0x00, sizeof(header));
+        header.kind = PORT_INFO;
+        header.data_length = info.length();
+        char *p_header = (char*)&header;
+        frame.insert(frame.end(), p_header, p_header + sizeof(header));
+    }
+    frame.insert(frame.end(), info.begin(), info.end());
+    output(frame.data(), frame.size());
+}
+
+void Session::version()
+{
+    struct __attribute__((__packed__)) port_info_reply_t {
+        agw_header_t header;
+        uint32_t     major;
+        uint32_t     minor;
+    };
+    union __attribute__((__packed__)) {
+        port_info_reply_t structured;
+        char flat[sizeof(port_info_reply_t)];
+    } frame;
+    ::memset(frame.flat, 0x00, sizeof(frame.flat));
+    frame.structured.header.kind = VERSION;
+    frame.structured.header.data_length = 2 * sizeof(uint32_t);
+    frame.structured.major = meta["ver_major"].toInt();
+    frame.structured.minor = meta["ver_minor"].toInt();
+    output(frame.flat, sizeof(frame.flat));
 }

@@ -25,6 +25,7 @@ enum agw_frame_kind {
     DATA_PROTO     = 'D',
     DATA_UNPROTO   = 'M',
     DATA_UNPROTO_V = 'V',
+    MONITOR        = 'm'
 };
 
 struct __attribute__((__packed__)) agw_header_t {
