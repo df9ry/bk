@@ -8,11 +8,31 @@ extern "C" {
 #include "service.h"
 #include "error.h"
 
+// Severity of a message:
+enum grade_t {
+    BK_DEBUG = 'd', BK_INFO = 'i', BK_WARNING = 'w', BK_ERROR = 'e', BK_FATAL = 'f'
+};
+
+// Interface to publish and withdraw services:
+struct admin_t {
+    bk_error_t (*publish)  (const char* module_id, const char* meta,
+                            const service_t* service_if);
+    bk_error_t (*withdraw) (const char* module_id, const char* name);
+    void       (*debug) (grade_t grade, const char* text);
+    void       (*dump)  (const char* text, const char* pb, size_t cb);
+};
+
+// Lookup interface:
+struct lookup_t {
+    const service_t* (*find_service) (const char* server);
+};
+
+// Interface to handle loadable modules:
 struct module_t {
-    bk_error_t (*load)  (const char      *id,
-                         const service_t *sys_service,
-                         const char      *meta);
-    bk_error_t (*start) ();
+    bk_error_t (*load)  (const char     *id,
+                         const admin_t  *admin_ifc,
+                         const char     *meta);
+    bk_error_t (*start) (const lookup_t *lookup);
     bk_error_t (*stop)  ();
 };
 

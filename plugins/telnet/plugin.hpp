@@ -7,8 +7,7 @@
 #include <jsonx.hpp>
 
 #include <bk/error.h>
-#include <bk/service.h>
-#include <bk/session.h>
+#include <bk/module.h>
 
 class PluginException: public std::runtime_error
 {
@@ -27,37 +26,37 @@ public:
     jsonx::json meta;
 
     static Plugin* constructor(
-        const std::string& id, const service_t *sys_ifc, const jsonx::json& meta)
+        const std::string& id, const admin_t *admin_ifc, const jsonx::json& meta)
     {
-        self = new Plugin(id, sys_ifc, meta);
+        self = new Plugin(id, admin_ifc, meta);
         return self;
     }
 
     static void debug(const std::string& msg) {
-        self->sys_ifc.debug(BK_DEBUG, msg.c_str());
+        self->admin_ifc.debug(BK_DEBUG, msg.c_str());
     }
 
     static void info(const std::string& msg) {
-        self->sys_ifc.debug(BK_INFO, msg.c_str());
+        self->admin_ifc.debug(BK_INFO, msg.c_str());
     }
 
     static void warning(const std::string& msg) {
-        self->sys_ifc.debug(BK_WARNING, msg.c_str());
+        self->admin_ifc.debug(BK_WARNING, msg.c_str());
     }
 
     static void error(const std::string& msg) {
-        self->sys_ifc.debug(BK_ERROR, msg.c_str());
+        self->admin_ifc.debug(BK_ERROR, msg.c_str());
     }
 
     static void fatal(const std::string& msg) {
-        self->sys_ifc.debug(BK_FATAL, msg.c_str());
+        self->admin_ifc.debug(BK_FATAL, msg.c_str());
     }
 
     static void dump(const std::string& msg, const char* pb, size_t cb) {
-        self->sys_ifc.dump(("telnet:" + msg).c_str(), pb, cb);
+        self->admin_ifc.dump(("telnet:" + msg).c_str(), pb, cb);
     }
 
-    const service_t sys_ifc;
+    const admin_t admin_ifc;
 
     ~Plugin() = default;
 
@@ -69,8 +68,8 @@ public:
     bk_error_t publish_services();
 
 private:
-    Plugin(const std::string& _id, const service_t *_sys_ifc, const jsonx::json& _meta):
-        id{_id}, sys_ifc{*_sys_ifc}, meta{_meta}
+    Plugin(const std::string& _id, const admin_t *_admin_ifc, const jsonx::json& _meta):
+        id{_id}, admin_ifc{*_admin_ifc}, meta{_meta}
     {}
 
 };

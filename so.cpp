@@ -70,9 +70,9 @@ void* SharedObject::getsym(const string &name)
 	return addr;
 }
 
-bk_error_t SharedObject::start()
+bk_error_t SharedObject::start(const lookup_t* lookup_ifc)
 {
-    return module_ifc.start();
+    return module_ifc.start(lookup_ifc);
 }
 
 bk_error_t SharedObject::stop()

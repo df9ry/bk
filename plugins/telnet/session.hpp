@@ -2,6 +2,9 @@
 #define SESSION_HPP
 
 #include <bk/error.h>
+#include <bk/module.h>
+
+#include <jsonx.hpp>
 
 #include <memory>
 #include <string>
@@ -30,7 +33,7 @@ public:
     Server&           server;
     std::atomic<bool> quit{true};
 
-    bk_error_t        open();
+    bk_error_t        open(const service_t& target_service_ifc);
     void              close();
 
     void              input( const char* pb, const size_t cb);
@@ -42,6 +45,9 @@ private:
     const std::atomic<int>       fD;
     telnet_t*                    telnet;
     std::unique_ptr<std::thread> reader{nullptr};
+    service_t                    target_service_ifc{};
+    session_t                    target_session_ifc{};
+    int                          target_session_id{0};
 
     void                         run();
 };

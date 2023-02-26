@@ -2,8 +2,7 @@
 #define _SERVICE_HPP
 
 #include "so.hpp"
-
-#include "bk/session.h"
+#include "bk/service.h"
 
 #include <stdexcept>
 #include <string>
@@ -26,7 +25,7 @@ public:
 
     static Map_t container;
 
-    Service(const jsonx::json &meta, SharedObject::Ptr_t so, const session_admin_t* sap);
+    Service(const jsonx::json &meta, SharedObject::Ptr_t so);
     ~Service();
 
     Service() = delete;
@@ -42,21 +41,15 @@ public:
         return (iter != container.end()) ? iter->second : nullptr;
     }
 
-    static const Service& lookup_service(const std::string &name) {
-        auto ptr = lookup(name);
-        if (!ptr)
-            throw ServiceException("Service not found: " + name);
-        return *ptr; 
-    }
+    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so);
 
-    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so, const session_admin_t* sap);
-
-    static const Service& create_service(jsonx::json meta, SharedObject::Ptr_t so,
-                                         session_admin_t* sap);
+    static const Service& create_service(jsonx::json meta, SharedObject::Ptr_t so);
 
     static bool remove_service(const std::string &name) {
         return container.erase(name);
     }
+
+    const service_t service_ifc;
 
     const std::string get_name() const { return meta["name"]; }
     const SharedObject::Ptr_t get_plugin() const { return so; }
@@ -64,7 +57,6 @@ public:
 private:
     jsonx::json         meta;
     SharedObject::Ptr_t so;
-    session_admin_t     session_admin_ifc{};
 };
 
 #endif // _SERVICE_HPP //

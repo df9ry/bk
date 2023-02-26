@@ -9,6 +9,7 @@ typedef enum {
     BK_ERC_NO_ID,
     BK_ERC_NO_SERVICE_IFC,
     BK_ERC_INV_SERVICE_IFC,
+    BK_ERC_NO_SESSION_IFC,
     BK_ERC_NO_SESSION_IFC_PTR,
     BK_ERC_NO_SESSION_ID_PTR,
     BK_ERC_NO_SUCH_SERVICE,
@@ -22,6 +23,7 @@ typedef enum {
     BK_ERC_BIND_ERROR,
     BK_ERC_LISTEN_ERROR,
     BK_ERC_ACCEPT_ERROR,
+    BK_ERC_NULL_BODY,
 } bk_error_t;
 
 #endif // ERROR_H

@@ -1,7 +1,7 @@
 #include "version.h"
 #include "getopt.h"
 #include "so.hpp"
-#include "cli.hpp"
+#include "semaphore.hpp"
 #include "service.hpp"
 #include "bk/module.h"
 #include "bk/service.h"
@@ -24,6 +24,9 @@
 using namespace std;
 using namespace jsonx;
 
+bool quit{false};
+semaphore gate{};
+
 static bool silent{false};
 
 static void print_version(ostream &os)
@@ -45,54 +48,11 @@ static void help(ostream &os, const char *name)
 
 static int is_sys_session_open{false};
 
-static session_t sys_session {
-    .get = [] (int         session_id,
-               const char* request_meta,
-               response_f  response_function, void* user_data)->bk_error_t
+static const lookup_t lookup_ifc {
+    .find_service = [] (const char* server_name) -> const service_t*
     {
-        return BK_ERC_NOT_IMPLEMENTED;
-    },
-    .put = [] (int         session_id,
-               const char* request_meta,
-               uint8_t*    p_request_body,
-               size_t      c_request_body)->bk_error_t
-    {
-        return BK_ERC_NOT_IMPLEMENTED;
-    },
-    .xch = [] (int         session_id,
-               const char* request_meta,
-               uint8_t*    p_request_body,
-               size_t      c_request_body,
-               response_f  response_function, void* user_data)->bk_error_t
-    {
-        return BK_ERC_NOT_IMPLEMENTED;
-    }
-};
-
-static session_admin_t sys_sap {
-    .open_session = [] (const char* meta,
-                        session_t** session_ifc_ptr,
-                        int* session_id_ptr)->bk_error_t
-    {
-        if (is_sys_session_open)
-            return BK_ERC_TO_MUCH_SESSIONS;
-        if (!session_ifc_ptr)
-            return BK_ERC_NO_SESSION_IFC_PTR;
-        is_sys_session_open = true;
-        *session_ifc_ptr = &sys_session;
-        if (!session_id_ptr)
-            return BK_ERC_NO_SESSION_ID_PTR;
-        *session_id_ptr = 0;
-        return BK_ERC_OK;
-    },
-    .close_session = [] (int session_id)->bk_error_t
-    {
-        if (is_sys_session_open) {
-            is_sys_session_open = false;
-            return BK_ERC_OK;
-        } else {
-            return BK_ERC_NO_SUCH_SESSION;
-        }
+        auto service = Service::lookup(server_name);
+        return service ? &service->service_ifc : nullptr;
     }
 };
 
@@ -144,11 +104,12 @@ int main(int argc, char** argv) {
         // Create service "sys":
         json meta;
         meta["name"] = "sys";
-        auto sys_service = Service::create(meta, nullptr, &sys_sap);
-        service_t sys_ifc {
-            .publish = [] (const char*            _module_id,
-                           const char*            _meta,
-                           const session_admin_t* _session_admin_ifc)->bk_error_t
+        auto sys_service = Service::create(meta, nullptr); // Not loaded from SO
+        // Administrator interface:
+        admin_t admin_ifc {
+            .publish = [] (const char*      _module_id,
+                           const char*      _meta,
+                           const service_t* _service_ifc)->bk_error_t
             {
                 try {
                     assert(_module_id);
@@ -161,7 +122,7 @@ int main(int argc, char** argv) {
                         throw runtime_error("Module not found: " + name);
                     if (!silent)
                         cout << "[d] Create service \"" << name << "\"" << endl;
-                    Service::create(meta, module_ptr, _session_admin_ifc).get();
+                    Service::create(meta, module_ptr).get();
                     return BK_ERC_OK;
                 } catch (exception &ex) {
                     cerr << "Unable to create service: " << ex.what() << endl;
@@ -238,15 +199,15 @@ int main(int argc, char** argv) {
             if (module_ptr->load) {
                 ostringstream oss;
                 meta.write(oss);
-                module_ptr->load(so->id.c_str(), &sys_ifc, oss.str().c_str());
+                module_ptr->load(so->id.c_str(), &admin_ifc, oss.str().c_str());
             }
         });
 
-        // Loop through the plugins list to start plugins;
+        // Loop through the plugins list to start plugins:
         for_each(SharedObject::container.begin(),
                  SharedObject::container.end(),  [] (auto &sop) {
             auto so = sop.second;
-            bk_error_t erc = so->start();
+            bk_error_t erc = so->start(&lookup_ifc);
             if (erc != BK_ERC_OK)
                 throw runtime_error("Error " + to_string(erc) +
                                     " when starting plugin \"" +
@@ -254,7 +215,20 @@ int main(int argc, char** argv) {
                                     "\"");
         });
 
-        Cli::exec();
+        // Loop through the launch list to start processes:
+        auto launches = document["launch"].toArray();
+        for_each(launches.begin(), launches.end(),  [&] (json meta) {
+            string cmd = meta.toString();
+            int result = ::system(cmd.c_str());
+            admin_ifc.debug(BK_DEBUG,
+                          ("Launch of \"" + cmd
+                             + "\" exited with code "
+                             + to_string(result)).c_str());
+        });
+
+        // Block until quit command was given:
+        while (!quit)
+            gate.wait();
 
         // Loop through the plugins list to stop plugins;
         for_each(SharedObject::container.rbegin(),

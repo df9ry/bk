@@ -3,7 +3,7 @@
 
 #include "session.hpp"
 
-#include <bk/session.h>
+#include <bk/module.h>
 
 #include <jsonx.hpp>
 
@@ -55,8 +55,8 @@ public:
     Server(Server&& other) = delete;
 
     std::string get_name() const { return meta["name"]; }
-    const session_admin_t* get_session_admin() const { return &session_admin_ifc; }
-    bk_error_t start();
+    std::string get_prompt() const { return meta["prompt"]; }
+    bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
     void close(Session* session);
 
@@ -65,7 +65,8 @@ private:
     void                         run();
 
     jsonx::json                  meta;
-    session_admin_t              session_admin_ifc;
+    lookup_t                     lookup_ifc{};
+    service_t                    target_service_ifc{};
     std::vector<Session::Ptr_t>  sessions{};
     int                          session_id{0};
 };

@@ -61,7 +61,7 @@ public:
 
     bool load(const std::string &path);
     void* getsym(const std::string &name);
-    bk_error_t start();
+    bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
 
     std::string error_text() const { return error; }

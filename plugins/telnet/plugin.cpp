@@ -1,8 +1,8 @@
 
 #include "plugin.hpp"
-#include "server.hpp"
 
 #include "bk/module.h"
+#include "server.hpp"
 
 #include <jsonx.hpp>
 
@@ -25,11 +25,11 @@ bk_error_t Plugin::publish_services()
         stringstream oss;
         service.write(oss);
         auto server = Server::create(service);
-        bk_error_t erc = sys_ifc.publish(id.c_str(),
+        bk_error_t erc = admin_ifc.publish(id.c_str(),
                                              oss.str().c_str(),
-                                             server->get_session_admin());
+                                             nullptr); // No service interface for now
         if (erc != BK_ERC_OK)
-            sys_ifc.debug(BK_FATAL, (
+            admin_ifc.debug(BK_FATAL, (
                                   "Unable to publish service \"" +
                                   service["name"].toString() +
                                   "\"!. ERC = " +
@@ -41,14 +41,14 @@ bk_error_t Plugin::publish_services()
 extern "C" {
     module_t module {
         .load  = [] (const char *id,
-                     const service_t *sys,
+                     const admin_t *admin,
                      const char *meta)->bk_error_t
         {
             if (!id)
                 return BK_ERC_NO_ID;
-            if (!sys)
+            if (!admin)
                 return BK_ERC_NO_SERVICE_IFC;
-            if ((!sys->debug) || (!sys->publish) || (!sys->withdraw))
+            if ((!admin->debug) || (!admin->publish) || (!admin->withdraw))
                 return BK_ERC_INV_SERVICE_IFC;
             if (!meta)
                 return BK_ERC_NO_META;
@@ -57,7 +57,7 @@ extern "C" {
                 _meta.parse(meta);
                 if (!_meta.isObject())
                     return BK_ERC_INV_META;
-                return Plugin::constructor(id, sys, _meta)->publish_services();
+                return Plugin::constructor(id, admin, _meta)->publish_services();
             }
             catch(const runtime_error &ex) {
                 Plugin::fatal(ex.what());
@@ -65,13 +65,14 @@ extern "C" {
             }
             return BK_ERC_OK;
         },
-        .start = [] ()->bk_error_t {
+        .start = [] (const lookup_t* lookup_ifc)->bk_error_t {
             Plugin::info("Start plugin \"" + Plugin::self->get_name() + "\"");
             // Start all server:
-            for_each(Server::container.begin(), Server::container.end(), [] (auto &pair)
+            for_each(Server::container.begin(), Server::container.end(),
+                     [lookup_ifc] (auto &pair)
             {
                 auto server = pair.second;
-                bk_error_t erc = server->start();
+                bk_error_t erc = server->start(lookup_ifc);
                 if (erc != BK_ERC_OK)
                     Plugin::fatal("Start plugin \"" + Plugin::self->get_name() + "\" " +
                          "failed with error code " + to_string(erc));
@@ -94,3 +95,4 @@ extern "C" {
         }
     };
 } // end extern C //
+

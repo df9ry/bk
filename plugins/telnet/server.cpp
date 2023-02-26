@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <cassert>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -16,26 +17,7 @@ using namespace jsonx;
 Server::Map_t Server::container;
 
 Server::Server(const json &_meta):
-    meta{_meta},
-    session_admin_ifc {
-        .open_session = [] (const char* meta,
-                                session_t** session_ifc_ptr,
-                                int* session_id_ptr)->bk_error_t
-        {
-            if (!session_ifc_ptr)
-                return BK_ERC_NO_SESSION_IFC_PTR;
-            //TODO: Create a session
-            *session_ifc_ptr = nullptr;
-            if (!session_id_ptr)
-                return BK_ERC_NO_SESSION_ID_PTR;
-            *session_id_ptr = -1;
-            return BK_ERC_OK;
-        },
-        .close_session = [] (int session_id)->bk_error_t
-        {
-            return BK_ERC_OK;
-        }
-    }
+    meta{_meta}
 {}
 
 Server::~Server()
@@ -50,9 +32,24 @@ Server::Ptr_t Server::create(json meta)
     return container.emplace(name, new Server(meta)).first->second;
 }
 
-bk_error_t Server::start()
+bk_error_t Server::start(const lookup_t* _lookup_ifc)
 {
     Plugin::info("Start server \"" + get_name() + "\"");
+    assert(_lookup_ifc);
+    lookup_ifc = *_lookup_ifc;
+
+    string target = meta["target"];
+    if (!target.empty()) {
+        if (!lookup_ifc.find_service)
+            Plugin::fatal("lookup_ifc.find_service is null");
+        assert(lookup_ifc.find_service);
+        auto _target_service_ifc = lookup_ifc.find_service(target.c_str());
+        if (!_target_service_ifc)
+            Plugin::fatal("Target not found: \"" + target + "\"");
+        assert(_target_service_ifc);
+        target_service_ifc = *_target_service_ifc;
+    }
+
     worker.reset(new thread([this] () { run(); }));
     return BK_ERC_OK;
 }
@@ -66,6 +63,7 @@ bk_error_t Server::stop()
 
 void Server::run()
 {
+    // Start external TCP service:
     string port = meta["port"];
     if (port.empty())
         port = "telnet";
@@ -73,9 +71,10 @@ void Server::run()
     if (host.empty())
         host = "localhost";
     int ip_v = meta["ip-v"];
-
+    int backlog = meta["backlog"];
     // number of connections allowed on the incoming queue:
-    const unsigned int backLog = 8;
+    if (!backlog)
+        backlog = 8;
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
     addrinfo *info;
@@ -149,7 +148,7 @@ void Server::run()
     }
 
     // finally start listening for connections on our socket
-    int listenR = listen(sockFD, backLog);
+    int listenR = listen(sockFD, backlog);
     if (listenR == -1) {
         Plugin::fatal("Error while Listening on socket\n");
         ::close(sockFD);
@@ -183,7 +182,7 @@ void Server::run()
         else
             *iter = session_ptr;
         // Start session:
-        session_ptr->open();
+        session_ptr->open(target_service_ifc);
     }
 }
 

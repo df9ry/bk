@@ -4,7 +4,7 @@
 #include "session.hpp"
 #include "port.hpp"
 
-#include <bk/session.h>
+#include <bk/service.h>
 
 #include <jsonx.hpp>
 
@@ -58,7 +58,6 @@ public:
     std::vector<Port::Ptr_t> ports{};
 
     std::string get_name() const { return meta["name"]; }
-    const session_admin_t* get_session_admin() const { return &session_admin_ifc; }
     bk_error_t start();
     bk_error_t stop();
     void close(Session* session);
@@ -68,7 +67,6 @@ private:
     void                         run();
 
     jsonx::json                  meta;
-    session_admin_t              session_admin_ifc;
     std::vector<Session::Ptr_t>  sessions{};
     int                          session_id{0};
 };

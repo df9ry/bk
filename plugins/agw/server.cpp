@@ -17,26 +17,7 @@ using namespace jsonx;
 Server::Map_t Server::container;
 
 Server::Server(const json &_meta):
-    meta{_meta},
-    session_admin_ifc {
-        .open_session = [] (const char* meta,
-                                session_t** session_ifc_ptr,
-                                int* session_id_ptr)->bk_error_t
-        {
-            if (!session_ifc_ptr)
-                return BK_ERC_NO_SESSION_IFC_PTR;
-            //TODO: Create a session
-            *session_ifc_ptr = nullptr;
-            if (!session_id_ptr)
-                return BK_ERC_NO_SESSION_ID_PTR;
-            *session_id_ptr = -1;
-            return BK_ERC_OK;
-        },
-        .close_session = [] (int session_id)->bk_error_t
-        {
-            return BK_ERC_OK;
-        }
-    }
+    meta{_meta}
 {}
 
 Server::~Server()
@@ -54,8 +35,6 @@ Server::Ptr_t Server::create(json meta)
 bk_error_t Server::start()
 {
     Plugin::info("Start server \"" + get_name() + "\"");
-
-    Plugin::debug("XX: " + meta_2_string(meta));
     auto ports_meta = meta["axports"].toArray();
     for_each(ports_meta.begin(), ports_meta.end(), [this] (const auto &port_meta) {
         Port::Ptr_t port = Port::create(*this, ports.size(), port_meta);

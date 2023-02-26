@@ -10,6 +10,7 @@
 #include <cstring>
 
 using namespace std;
+using namespace jsonx;
 
 static const telnet_telopt_t telopts[] = {
     { TELNET_TELOPT_ECHO,      TELNET_WONT, TELNET_DO   },
@@ -52,6 +53,7 @@ Session::Session(Server& _server, int _fD, int _id):
                          TELNET_FLAG_NVT_EOL, this);
 }
 
+
 Session::~Session()
 {
     if (fD != -1) {
@@ -71,13 +73,21 @@ string Session::name() const
     return server.get_name() + "/" + to_string(id);
 }
 
-bk_error_t Session::open()
+bk_error_t Session::open(const service_t& _target_service_ifc)
 {
     Plugin::info("Open telnet session \"" + name() + "\"");
+    target_service_ifc = _target_service_ifc;
+    // Get new session interface:
+    session_t *_target_session_ifc;
+    auto erc = _target_service_ifc.open_session("{}",
+                                                &_target_session_ifc,
+                                                &target_session_id);
+    if (erc)
+        return erc;
+    target_session_ifc = *_target_session_ifc;
+
     reader.reset(new thread([this] () { run(); }));
     reader->detach();
-
-    output("Test\n", 5);
 
     return BK_ERC_OK;
 }
@@ -85,11 +95,17 @@ bk_error_t Session::open()
 void Session::close()
 {
     Plugin::debug("Close: " + name());
+    if (target_service_ifc.close_session)
+        target_service_ifc.close_session(target_session_id);
+    target_session_id = 0;
     server.close(this);
 }
 
 void Session::run()
 {
+    string prompt = server.get_prompt();
+    if (!prompt.empty())
+        output(prompt.c_str(), prompt.length());
     char buffer[256];
     quit = false;
     while (!quit) {
@@ -112,5 +128,18 @@ void Session::output(const char* pb, const size_t cb)
 
 void Session::input(const char* pb, const size_t cb)
 {
-    Plugin::dump("RX", pb, cb);
+    if (target_session_ifc.xch) {
+        target_session_ifc.xch(target_session_id, "{}", pb, cb,
+                               [] (int session_id,
+                                   const char* response_meta,
+                                   const char* p_response_body,
+                                   size_t      c_response_body,
+                                   void*       user_data)
+        {
+            auto session = static_cast<Session*>(user_data);
+            session->output(p_response_body, c_response_body);
+        }, this);
+    } else {
+        Plugin::dump("Missed put", pb, cb);
+    }
 }
