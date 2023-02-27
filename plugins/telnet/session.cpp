@@ -56,11 +56,11 @@ Session::Session(Server& _server, int _fD, int _id):
 
 Session::~Session()
 {
-    if (fD != -1) {
-        Plugin::info("Close telnet session \"" + name() + "\"");
-        ::close(fD);
-    }
+    Plugin::info("Close telnet session \"" + name() + "\"");
+    ::close(fD);
     telnet_free(telnet);
+    if (target_service_ifc.close_session)
+        target_service_ifc.close_session(target_session_ctx);
 }
 
 Session::Ptr_t Session::create(Server& server, int fD, int id)
@@ -124,7 +124,7 @@ void Session::run()
             break;
         telnet_recv(telnet, buffer, n);
     } // end while //
-    server.close(this);
+    close();
 }
 
 void Session::output(const char* pb, const size_t cb)
@@ -140,7 +140,7 @@ void Session::input(const char* pb, const size_t cb)
 {
     if (target_session_ifc.post) {
         auto erc = target_session_ifc.post(target_session_ctx, "", pb, cb);
-        if (!erc)
+        if (erc)
             Plugin::error("Post error: " + to_string(erc));
     } else {
         Plugin::dump("Missed post", pb, cb);

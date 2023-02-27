@@ -133,15 +133,19 @@ void Server::run()
     // these calls usually return -1 as result of some error
     int sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
-        Plugin::fatal("Error while creating socket");
+        Plugin::fatal("Telnet server: Error while creating socket");
         freeaddrinfo(info);
         return;
     }
 
+    const int enable = 1;
+    if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        Plugin::fatal("Telnet server: setsockopt(SO_REUSEADDR) failed");
+
     // Let's bind address to our socket we've just created
     int bindR = bind(sockFD, info->ai_addr, info->ai_addrlen);
     if (bindR == -1) {
-        Plugin::fatal("Error while binding socket");
+        Plugin::fatal("Telnet server: Error while binding socket");
         ::close(sockFD);
         freeaddrinfo(info);
         return;
@@ -150,7 +154,7 @@ void Server::run()
     // finally start listening for connections on our socket
     int listenR = listen(sockFD, backlog);
     if (listenR == -1) {
-        Plugin::fatal("Error while Listening on socket\n");
+        Plugin::fatal("Telnet server: Error while Listening on socket\n");
         ::close(sockFD);
         freeaddrinfo(info);
         return;
@@ -170,7 +174,7 @@ void Server::run()
         int newFD
           = accept(sockFD, (sockaddr *) &client_addr, &client_addr_size);
         if (newFD == -1) {
-            Plugin::error("Error while Accepting on socket");
+            Plugin::error("Telnet server: Error while Accepting on socket");
             continue;
         }
         auto session_ptr = Session::create(*this, newFD, ++session_id);

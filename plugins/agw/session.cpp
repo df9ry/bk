@@ -22,10 +22,8 @@ Session::Session(Server& _server, int _fD, int _id):
 
 Session::~Session()
 {
-    if (fD != -1) {
-        Plugin::info("Close agw session \"" + name() + "\"");
-        ::close(fD);
-    }
+    Plugin::info("Close agw session \"" + name() + "\"");
+    ::close(fD);
 }
 
 Session::Ptr_t Session::create(Server& server, int fD, int id)

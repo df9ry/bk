@@ -61,9 +61,11 @@ void Server::run()
     if (host.empty())
         host = "localhost";
     int ip_v = meta["ip-v"];
-
+    int backlog = meta["backlog"];
     // number of connections allowed on the incoming queue:
-    const unsigned int backLog = 8;
+    if (!backlog)
+        backlog = 8;
+    // number of connections allowed on the incoming queue:
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
     addrinfo *info;
@@ -80,7 +82,7 @@ void Server::run()
         hints.ai_family = AF_INET6;
         break;
     default:
-        Plugin::error("Invalid internet version (ip-v) property: " +
+        Plugin::error("AgwServer: Invalid internet version (ip-v) property: " +
                       to_string(ip_v) + "! Should be 4 or 6.");
         return;
     } // end switch //
@@ -91,12 +93,12 @@ void Server::run()
     // man getaddrinfo
     int gAddRes = getaddrinfo(host.c_str(), port.c_str(), &hints, &info);
     if (gAddRes != 0) {
-        Plugin::error("Unable to get address info! Error: " +
+        Plugin::error("AgwServer: Unable to get address info! Error: " +
                       string(gai_strerror(gAddRes)));
         return;
     }
     if (!info) {
-        Plugin::error("No available adress found!");
+        Plugin::error("AgwServer: No available adress found!");
         return;
     }
 
@@ -122,24 +124,28 @@ void Server::run()
     // these calls usually return -1 as result of some error
     int sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
-        Plugin::fatal("Error while creating socket");
+        Plugin::fatal("AgwServer: Error while creating socket");
         freeaddrinfo(info);
         return;
     }
 
+    const int enable = 1;
+    if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        Plugin::fatal("AgwServer:  server: setsockopt(SO_REUSEADDR) failed");
+
     // Let's bind address to our socket we've just created
     int bindR = bind(sockFD, info->ai_addr, info->ai_addrlen);
     if (bindR == -1) {
-        Plugin::fatal("Error while binding socket");
+        Plugin::fatal("AgwServer: Error while binding socket");
         ::close(sockFD);
         freeaddrinfo(info);
         return;
     }
 
     // finally start listening for connections on our socket
-    int listenR = listen(sockFD, backLog);
+    int listenR = listen(sockFD, backlog);
     if (listenR == -1) {
-        Plugin::fatal("Error while Listening on socket\n");
+        Plugin::fatal("AgwServer: Error while Listening on socket\n");
         ::close(sockFD);
         freeaddrinfo(info);
         return;
@@ -159,7 +165,7 @@ void Server::run()
         int newFD
           = accept(sockFD, (sockaddr *) &client_addr, &client_addr_size);
         if (newFD == -1) {
-            Plugin::error("Error while Accepting on socket");
+            Plugin::error("AgwServer: Error while Accepting on socket");
             continue;
         }
         auto session_ptr = Session::create(*this, newFD, ++session_id);
