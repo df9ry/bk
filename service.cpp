@@ -10,52 +10,35 @@ using namespace jsonx;
 extern bool quit;
 extern semaphore gate;
 
-static bool have_client{false};
+static void*  client_ctx{nullptr};
+static resp_f client_fun{nullptr};
 
 static session_t my_session_ifc {
-    // Get data from server, no request data:
-    .get = [] (int         session_id, // from open_session()
-               const char* request_meta,
-               response_f  response_function, void* user_data) -> bk_error_t
+    .get = [] (void* server_ctx, const char* head, resp_f fun) -> bk_error_t
     {
-        if ((!have_client) || (session_id != 1))
+        if ((!client_ctx) || (server_ctx != (void*)1))
             return BK_ERC_NO_SUCH_SESSION;
+        client_fun = fun;
         stringstream oss;
-        quit = !Cli::exec(request_meta, oss);
-        gate.notify();
-        if (response_function) {
+        quit = !Cli::exec(head ? head : "", oss);
+        if (client_fun) {
             string response = oss.str();
-            response_function(1, "{}", response.c_str(), response.length(), user_data);
+            client_fun(client_ctx, "", response.c_str(), response.length());
         }
-        return BK_ERC_OK;
-    },
-    .put = [] (int         session_id,
-               const char* request_meta,
-               const char* p_request_body,
-               size_t      c_request_body) -> bk_error_t
-    {
-        if ((!have_client) || (session_id != 1))
-            return BK_ERC_NO_SUCH_SESSION;
-        stringstream oss;
-        quit = !Cli::exec(string(p_request_body, c_request_body), oss);
         gate.notify();
         return BK_ERC_OK;
     },
-    .xch = [] (int         session_id,
-               const char* request_meta,
-               const char* p_request_body,
-               size_t      c_request_body,
-               response_f  response_function, void* user_data) -> bk_error_t
+    .post = [] (void* server_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
     {
-        if ((!have_client) || (session_id != 1))
+        if ((!client_ctx) || (server_ctx != (void*)1))
             return BK_ERC_NO_SUCH_SESSION;
         stringstream oss;
-        quit = !Cli::exec(string(p_request_body, c_request_body), oss);
-        gate.notify();
-        if (response_function) {
+        quit = !Cli::exec(p_body ? string(p_body, c_body) : "", oss);
+        if (client_fun) {
             string response = oss.str();
-            response_function(1, "{}", response.c_str(), response.length(), user_data);
+            client_fun(client_ctx, "", response.c_str(), response.length());
         }
+        gate.notify();
         return BK_ERC_OK;
     }
 };
@@ -65,26 +48,26 @@ Service::Map_t Service::container;
 Service::Service(const json &_meta, SharedObject::Ptr_t _so):
     meta{_meta}, so{_so},
     service_ifc {
-        .open_session = [] (const char*      meta,
-                            session_t**      remote_session_ifc_ptr,
-                            int*             remote_session_id_ptr) -> bk_error_t
+        .open_session = []
+            (void* client_loc_ctx, void** server_ctx_ptr, const char* meta, session_t** ifc_ptr) -> bk_error_t
         {
-            if (have_client)
+            if (client_ctx)
                 return BK_ERC_TO_MUCH_SESSIONS;
-            if (!remote_session_ifc_ptr)
+            if (!ifc_ptr)
                 return BK_ERC_NO_SESSION_IFC_PTR;
-            *remote_session_ifc_ptr = &my_session_ifc;
-            if (!remote_session_id_ptr)
+            *ifc_ptr = &my_session_ifc;
+            if (!server_ctx_ptr)
                 return BK_ERC_NO_SESSION_ID_PTR;
-            *remote_session_id_ptr = 1;
-            have_client = true;
+            *server_ctx_ptr = (void*)1;
+            client_ctx = client_loc_ctx;
             return BK_ERC_OK;
         },
-        .close_session = [] (int session_id) -> bk_error_t
+        .close_session = [] (void* server_ctx) -> bk_error_t
         {
-            if ((!have_client) || (session_id != 1))
+            if ((!client_ctx) || (server_ctx != (void*)1))
                 return BK_ERC_NO_SUCH_SESSION;
-            have_client = false;
+            client_ctx = nullptr;
+            client_fun = nullptr;
             return BK_ERC_OK;
         }
     }

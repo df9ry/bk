@@ -65,14 +65,16 @@ bool Cli::exec(const string &cmd, ostream &os)
     bool ok = true;
     if (vec.size() > 0) {
         string s = vec[0];
-        size_t l = vec.size();
-        if ((l == 1) && (s == "quit")) {
-            ok = false;
-        } else if (s == "list") {
-            list(os);
-        } else {
-            os << "Not found: \"" << s << "\"!" << endl
-               << "  (\"quit\" | \"list\")" << endl;
+        if (!s.empty()) {
+            size_t l = vec.size();
+            if ((l == 1) && (s == "quit")) {
+                ok = false;
+            } else if (s == "list") {
+                list(os);
+            } else {
+                os << "Not found: \"" << s << "\"!" << endl
+                   << "  (\"quit\" | \"list\")" << endl;
+            }
         }
     }
     os << "adm> ";

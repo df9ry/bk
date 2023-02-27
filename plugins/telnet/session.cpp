@@ -73,18 +73,31 @@ string Session::name() const
     return server.get_name() + "/" + to_string(id);
 }
 
+static void my_resp_fun(void* client_ctx, const char* head, const char* p_body, size_t c_body)
+{
+    assert(client_ctx);
+    auto session = static_cast<Session*>(client_ctx);
+    session->output(p_body, c_body);
+}
+
 bk_error_t Session::open(const service_t& _target_service_ifc)
 {
     Plugin::info("Open telnet session \"" + name() + "\"");
     target_service_ifc = _target_service_ifc;
     // Get new session interface:
     session_t *_target_session_ifc;
-    auto erc = _target_service_ifc.open_session("{}",
-                                                &_target_session_ifc,
-                                                &target_session_id);
+    auto erc = _target_service_ifc.open_session(
+                this, &target_session_ctx, "{}", &_target_session_ifc);
     if (erc)
         return erc;
     target_session_ifc = *_target_session_ifc;
+
+    // Output welcome message, if defined:
+    string welcome = server.get_welcome();
+    if (!welcome.empty())
+        output(welcome.c_str(), welcome.length());
+    // Tell the server our reponse function:
+    target_session_ifc.get(target_session_ctx, "", my_resp_fun);
 
     reader.reset(new thread([this] () { run(); }));
     reader->detach();
@@ -96,16 +109,13 @@ void Session::close()
 {
     Plugin::debug("Close: " + name());
     if (target_service_ifc.close_session)
-        target_service_ifc.close_session(target_session_id);
-    target_session_id = 0;
+        target_service_ifc.close_session(target_session_ctx);
+    target_session_ctx = nullptr;
     server.close(this);
 }
 
 void Session::run()
 {
-    string prompt = server.get_prompt();
-    if (!prompt.empty())
-        output(prompt.c_str(), prompt.length());
     char buffer[256];
     quit = false;
     while (!quit) {
@@ -128,18 +138,11 @@ void Session::output(const char* pb, const size_t cb)
 
 void Session::input(const char* pb, const size_t cb)
 {
-    if (target_session_ifc.xch) {
-        target_session_ifc.xch(target_session_id, "{}", pb, cb,
-                               [] (int session_id,
-                                   const char* response_meta,
-                                   const char* p_response_body,
-                                   size_t      c_response_body,
-                                   void*       user_data)
-        {
-            auto session = static_cast<Session*>(user_data);
-            session->output(p_response_body, c_response_body);
-        }, this);
+    if (target_session_ifc.post) {
+        auto erc = target_session_ifc.post(target_session_ctx, "", pb, cb);
+        if (!erc)
+            Plugin::error("Post error: " + to_string(erc));
     } else {
-        Plugin::dump("Missed put", pb, cb);
+        Plugin::dump("Missed post", pb, cb);
     }
 }

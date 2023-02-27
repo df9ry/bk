@@ -47,7 +47,7 @@ private:
     std::unique_ptr<std::thread> reader{nullptr};
     service_t                    target_service_ifc{};
     session_t                    target_session_ifc{};
-    int                          target_session_id{0};
+    void*                        target_session_ctx{nullptr};
 
     void                         run();
 };

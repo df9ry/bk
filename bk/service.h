@@ -10,42 +10,23 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-// Callback function for get and xch call:
-typedef void (*response_f) (int         session_id,      // from open_session()
-                            const char* response_meta,
-                            const char* p_response_body,
-                            size_t      c_response_body,
-                            void*       user_data);
+typedef void (*resp_f)(void* client_ctx, const char* head, const char* p_body, size_t c_body);
 
 // Any session might offer this interface:
 struct session_t {
-    // Get data from server, no request data:
-    bk_error_t (*get)(int         session_id,            // from open_session()
-                      const char* request_meta,
-                      response_f  response_function, void* user_data);
-
-    // Put data to server, no response data:
-    bk_error_t (*put)(int         session_id,            // from open_session()
-                      const char* request_meta,
-                      const char* p_request_body,
-                      size_t      c_request_body);
-
-    // Get data from server with request data:
-    bk_error_t (*xch)(int         session_id,            // from open_session()
-                      const char* request_meta,
-                      const char* p_request_body,
-                      size_t      c_request_body,
-                      response_f  response_function, void* user_data);
+    bk_error_t (*get) (void* server_ctx, const char* head, resp_f fun);
+    bk_error_t (*post)(void* server_ctx, const char* head, const char* p_body, size_t c_body);
 };
 
+// Any service might offer this interface:
 struct service_t {
-    bk_error_t (*open_session)  (const char* meta,
-                                 session_t** remote_session_ifc_ptr,
-                                 int*        remote_session_id_ptr);
-    bk_error_t (*close_session) (int         remote_session_id);
+    bk_error_t (*open_session)
+        (void* client_loc_ctx, void** server_ctx_ptr, const char* meta, session_t** ifc_ptr);
+    bk_error_t (*close_session) (void* server_ctx);
 };
 
 #ifdef __cplusplus
 }
 #endif
+
 #endif // _SERVICE_H //

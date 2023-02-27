@@ -55,7 +55,7 @@ public:
     Server(Server&& other) = delete;
 
     std::string get_name() const { return meta["name"]; }
-    std::string get_prompt() const { return meta["prompt"]; }
+    std::string get_welcome() const { return meta["welcome"]; }
     bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
     void close(Session* session);

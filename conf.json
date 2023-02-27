@@ -10,7 +10,7 @@
             "services":
             [
                 { "name": "admin", "ip-v": 6, "host": "localhost", "port": 3000,
-                  "target": "sys", "backlog": 1, "prompt": "adm> " }
+                  "target": "sys", "backlog": 1, "welcome": "*** Baukasten Konsole ***\n" }
             ]
         },
         {
