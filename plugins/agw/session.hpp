@@ -38,6 +38,7 @@ public:
 
     bool              use_raw_frames() const { return raw_frames; }
     bool              do_monitor() const { return monitor; }
+    void              transmit(const char* pb, const size_t cb);
 
 private:
     Session(Server& server, int fD, int id);
@@ -54,7 +55,6 @@ private:
     bool                         monitor{false};
 
     void                         run();
-    void                         transmit(const char* pb, const size_t cb);
     void                         receive(const char* pb, size_t cb);
     void                         receive(const jsonx::json &meta,
                                          const char* pb, size_t cb);

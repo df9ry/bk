@@ -24,6 +24,11 @@ static inline std::string buf10_2_string(const char *buf10)
     return std::string(buf);
 }
 
+static inline void buf10_set(char* buf10, const std::string& s)
+{
+    ::memcpy(buf10, s.c_str(), std::min<size_t>(s.length(), 10));
+}
+
 static inline std::string meta_2_string(const jsonx::json &meta)
 {
     std::stringstream oss;

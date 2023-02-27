@@ -66,7 +66,7 @@ void Session::run()
 
 void Session::transmit(const char* pb, const size_t cb)
 {
-    Plugin::dump("TX:", pb, cb);
+    //Plugin::dump("TX:", pb, cb);
     auto cbSent = ::send(fD, pb, cb, 0);
     if (cbSent != cb) {
         Plugin::error("AGW " + name() + ": Error sending data");
@@ -105,16 +105,18 @@ void Session::receive(const char* pb, size_t cb)
 
 void Session::receive(const json& meta, const char* pb, size_t cb)
 {
-    Plugin::dump("RX:" + meta_2_string(meta), pb, cb);
+    //Plugin::dump("RX:" + meta_2_string(meta), pb, cb);
     switch (string_2_kind(meta["kind"])) {
     case VERSION:
         version();
         return;
     case RAW_SWITCH:
         raw_frames = !raw_frames;
+        Plugin::debug("Agw: Set raw frames: " + string(raw_frames ? "on" : "off"));
         return;
     case MONITOR:
         monitor = !monitor;
+        Plugin::debug("Agw: Set monitor: " + string(monitor ? "on" : "off"));
         return;
     case REGISTER_CALL:
         register_call(meta["from"]);
@@ -129,25 +131,23 @@ void Session::receive(const json& meta, const char* pb, size_t cb)
         break;
     } // end switch //
     int port_no = meta["port"];
-#if 0
-    if (port_no >= ports.size()) {
+    if (port_no >= server.ports.size()) {
         Plugin::error("Received message for undefined port "
                       + to_string(port_no));
         Plugin::dump(meta_2_string(meta), pb, cb);
         return;
     }
-    ports.at(port_no)->receive(meta, pb, cb);
-#endif
+    server.ports.at(port_no)->receive(*this, meta, pb, cb);
 }
 
 void Session::register_call(const string &call)
 {
     uint8_t result;
     if (calls.contains(call)) {
-        Plugin::warning("Call " + call + " already registered");
+        Plugin::warning("Agw: Call " + call + " already registered");
         result = 0;
     } else {
-        Plugin::debug("Register call " + call);
+        Plugin::debug("Agw: Register call " + call);
         calls.insert(call);
         result = 1;
     }
@@ -170,11 +170,11 @@ void Session::unregister_call(const string &call)
 {
     uint8_t result;
    if (calls.contains(call)) {
-        Plugin::debug("Unregister call " + call);
+        Plugin::debug("Agw: Unregister call " + call);
         calls.extract(call);
         result = 1;
     } else {
-        Plugin::warning("Call " + call + " not registered");
+        Plugin::warning("Agw: Call " + call + " not registered");
         result = 0;
     }
    struct __attribute__((__packed__)) port_info_reply_t {
@@ -194,6 +194,7 @@ void Session::unregister_call(const string &call)
 
 void Session::port_info()
 {
+    Plugin::debug("Agw: Asking for port info");
     string info;
     {
         stringstream ss;
@@ -221,6 +222,9 @@ void Session::port_info()
 
 void Session::version()
 {
+    int major = meta["ver_major"];
+    int minor = meta["ver_minor"];
+    Plugin::debug("Agw: Asking for version: " + to_string(major) + "." + to_string(minor));
     struct __attribute__((__packed__)) port_info_reply_t {
         agw_header_t header;
         uint32_t     major;
@@ -233,7 +237,7 @@ void Session::version()
     ::memset(frame.flat, 0x00, sizeof(frame.flat));
     frame.structured.header.kind = VERSION;
     frame.structured.header.data_length = 2 * sizeof(uint32_t);
-    frame.structured.major = meta["ver_major"].toInt();
-    frame.structured.minor = meta["ver_minor"].toInt();
+    frame.structured.major = major;
+    frame.structured.minor = minor;
     transmit(frame.flat, sizeof(frame.flat));
 }

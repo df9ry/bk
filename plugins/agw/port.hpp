@@ -6,6 +6,7 @@
 #include <memory>
 
 class Server;
+class Session;
 
 class Port
 {
@@ -20,7 +21,7 @@ public:
     Port(const Port& other) = delete;
     Port(Port&& other) = delete;
 
-    void receive(const jsonx::json &meta, const char *pb, size_t cb);
+    void receive(Session& session, const jsonx::json &meta, const char *pb, size_t cb);
     std::string name() const;
 
     const int   id;
@@ -29,6 +30,14 @@ public:
 
 private:
     Port(Server& server, int id, const jsonx::json& meta);
+
+    void connect(Session& session, const jsonx::json& meta);
+    void disconnect(Session& session, const jsonx::json& meta);
+    void tx_queue_size(Session& session, const jsonx::json& meta);
+    void connected(Session& session, const std::string& local_call,
+                   const std::string& peer_call, bool initiated);
+    void disconnected(Session& session, const std::string& local_call,
+                      const std::string& peer_call, bool timeout);
 };
 
 #endif // PORT_HPP
