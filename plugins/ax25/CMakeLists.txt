@@ -7,15 +7,19 @@ project(${PROJECT_NAME}
 )
 
 set(SOURCES
+    dlc.cpp
     plugin.cpp
     server.cpp
     session.cpp
 )
 
 set(HEADERS
+    dlc.hpp
+    elements.hpp
     plugin.hpp
     server.hpp
     session.hpp
+    threadsavequeue.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

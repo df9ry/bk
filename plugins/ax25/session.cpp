@@ -11,7 +11,7 @@ using namespace std;
 using namespace jsonx;
 
 Session::Session(Server& _server, int _id):
-    server{_server}, id{_id}
+    server{_server}, id{_id}, dlc{*this}
 {
 }
 

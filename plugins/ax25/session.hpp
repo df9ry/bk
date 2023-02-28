@@ -1,6 +1,8 @@
 #ifndef SESSION_HPP
 #define SESSION_HPP
 
+#include "dlc.hpp"
+
 #include <bk/error.h>
 #include <bk/module.h>
 
@@ -33,12 +35,14 @@ public:
     bk_error_t        open();
     void              close();
 
+    ax25::DLC         dlc;
+
 private:
     Session(Server& server, int id);
 
-    service_t          target_service_ifc{};
-    session_t          target_session_ifc{};
-    void*              target_session_ctx{nullptr};
+    service_t         target_service_ifc{};
+    session_t         target_session_ifc{};
+    void*             target_session_ctx{nullptr};
 };
 
 #endif // SESSION_HPP

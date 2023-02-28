@@ -47,7 +47,7 @@ bk_error_t Session::open(const json &_meta)
 
 void Session::close()
 {
-    Plugin::debug("Close: " + name());
+    Plugin::debug("Close agw session \"" + name() + "\"");
     server.close(this);
 }
 
@@ -57,16 +57,19 @@ void Session::run()
     quit = false;
     while (!quit) {
         int n = ::recv(fD, buffer, sizeof(buffer), 0);
-        if (n <= 0)
+        if (n <= 0) {
+            Plugin::debug("Ret: " + to_string(n));
             break;
+        }
         receive(buffer, n);
+        //Plugin::dump("RX raw:", buffer, n);
     } // end while //
     server.close(this);
 }
 
 void Session::transmit(const char* pb, const size_t cb)
 {
-    //Plugin::dump("TX:", pb, cb);
+    Plugin::dump("TX", pb, cb);
     auto cbSent = ::send(fD, pb, cb, 0);
     if (cbSent != cb) {
         Plugin::error("AGW " + name() + ": Error sending data");
@@ -105,7 +108,7 @@ void Session::receive(const char* pb, size_t cb)
 
 void Session::receive(const json& meta, const char* pb, size_t cb)
 {
-    //Plugin::dump("RX:" + meta_2_string(meta), pb, cb);
+    Plugin::dump("RX" + meta_2_string(meta), pb, cb);
     switch (string_2_kind(meta["kind"])) {
     case VERSION:
         version();
@@ -162,6 +165,7 @@ void Session::register_call(const string &call)
     ::memset(frame.flat, 0x00, sizeof(frame.flat));
     frame.structured.header.kind = REGISTER_CALL;
     frame.structured.header.data_length = sizeof(uint8_t);
+    buf10_set(frame.structured.header.call_from, call);
     frame.structured.result = result;
     transmit(frame.flat, sizeof(frame.flat));
 }
@@ -188,6 +192,7 @@ void Session::unregister_call(const string &call)
    ::memset(frame.flat, 0x00, sizeof(frame.flat));
    frame.structured.header.kind = UNREGISTER_CALL;
    frame.structured.header.data_length = sizeof(uint8_t);
+   buf10_set(frame.structured.header.call_from, call);
    frame.structured.result = result;
    transmit(frame.flat, sizeof(frame.flat));
 }

@@ -1,6 +1,5 @@
 #include "server.hpp"
 #include "plugin.hpp"
-#include "utils.hpp"
 
 #include <cstring>
 #include <algorithm>
@@ -185,6 +184,10 @@ void Server::close(Session* session)
 {
     auto iter = find_if(sessions.begin(), sessions.end(),
                     [session](const auto &sp)->bool { return (session == sp.get()); });
-    if (iter != sessions.end())
+    if (iter != sessions.end()) {
         *iter = nullptr;
+        Plugin::debug("AGW server close session");
+    } else {
+        Plugin::error("AGW server close session not found!");
+    }
 }

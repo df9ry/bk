@@ -47,6 +47,6 @@
     "launch":
     [
         "gnome-terminal -- telnet localhost 3000",
-        #"/usr/share/playonlinux/playonlinux --run \"Paxon\" 2>/dev/null &"
+        "/usr/share/playonlinux/playonlinux --run \"Paxon\" 2>/dev/null &"
     ]
 }

@@ -75,7 +75,7 @@ void Port::disconnect(Session& session, const jsonx::json& meta)
     Plugin::debug("Agw: Request disconnect " +
                     call_to + " de " + call_from +
                     " on port " + name());
-    disconnected(session, call_to, call_from, false);
+    disconnected(session, call_from, call_to, false);
 }
 
 void Port::connected(Session& session, const std::string& local_call,
