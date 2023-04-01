@@ -11,6 +11,7 @@ configure_file(version.hpp.in version.h)
 add_subdirectory("plugins/telnet")
 add_subdirectory("plugins/agw")
 add_subdirectory("plugins/ax25")
+add_subdirectory("plugins/ax25ping")
 add_subdirectory("plugins/ipserver")
 add_subdirectory("plugins/udpclient")
 

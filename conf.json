@@ -56,6 +56,15 @@
                 { "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93 }
             ]
         },
+        {
+            "name": "ax25ping",
+            "path": "ax25ping/libbk_ax25ping.so",
+            "load": true,
+            "services":
+            [
+                { "name": "ping db0fhn", "target": "db0fhn", "interval": 5000 }
+            ]
+        },
     ],
     "launch":
     [
