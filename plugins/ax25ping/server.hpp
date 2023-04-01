@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include "session.hpp"
+#include "timer.hpp"
 
 #include <bk/module.h>
 
@@ -59,7 +60,10 @@ public:
     void close(Session* session);
 
 private:
+    void tick();
+
     jsonx::json                  meta;
+    Timer                        timer;
     lookup_t                     lookup_ifc{};
     service_t                    target_service_ifc{};
     std::vector<Session::Ptr_t>  sessions{};

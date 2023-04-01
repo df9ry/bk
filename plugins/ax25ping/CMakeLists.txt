@@ -10,12 +10,14 @@ set(SOURCES
     plugin.cpp
     server.cpp
     session.cpp
+    timer.cpp
 )
 
 set(HEADERS
     plugin.hpp
     server.hpp
     session.hpp
+    timer.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
