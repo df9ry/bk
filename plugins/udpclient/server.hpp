@@ -11,6 +11,9 @@
 #include <memory>
 #include <map>
 #include <thread>
+#include <atomic>
+
+struct addrinfo;
 
 class ServerException: public std::runtime_error
 {
@@ -63,7 +66,9 @@ public:
 private:
     std::unique_ptr<std::thread> worker{nullptr};
     void                         run();
-
+    addrinfo                    *info{nullptr};
+    std::atomic_bool             quit{false};
+    std::atomic_int              sockFD{-1};
     jsonx::json                  meta;
     lookup_t                     lookup_ifc{};
     service_t                    target_service_ifc{};

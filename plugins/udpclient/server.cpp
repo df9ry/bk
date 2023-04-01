@@ -22,6 +22,10 @@ Server::Server(const json &_meta):
 
 Server::~Server()
 {
+    if (info) {
+        freeaddrinfo(info);
+        info = nullptr;
+    }
 }
 
 Server::Ptr_t Server::create(json meta)
@@ -57,6 +61,9 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
 bk_error_t Server::stop()
 {
     Plugin::info("Stop server \"" + get_name() + "\"");
+    quit = true;
+    ::close(sockFD);
+    //worker->join();
     worker.release();
     return BK_ERC_OK;
 }
@@ -73,7 +80,6 @@ void Server::run()
     int ip_v = meta["ip-v"];
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
-    addrinfo *info;
     memset(&hints, 0, sizeof(hints));
     // for more explanation, man socket
     switch (ip_v) {
@@ -92,9 +98,11 @@ void Server::run()
         return;
     } // end switch //
     hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags    = AI_PASSIVE;
     hints.ai_protocol = IPPROTO_UDP;
 
     // man getaddrinfo
+    assert(!info);
     int gAddRes = getaddrinfo(host.c_str(), port.c_str(), &hints, &info);
     if (gAddRes != 0) {
         Plugin::error("Unable to get address info! Error: " +
@@ -126,18 +134,60 @@ void Server::run()
     // let's create a new socket, socketFD is returned as descriptor
     // man socket for more information
     // these calls usually return -1 as result of some error
-    int sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+    assert(sockFD == -1);
+    sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
-        Plugin::fatal("UDP client: Error while creating socket");
+        int erc = errno;
+        Plugin::fatal("UDP client: Error while creating socket: " +
+                      to_string(erc) + " (" + strerror(erc) + ")");
         freeaddrinfo(info);
+        info = nullptr;
         return;
     }
 
     const int enable = 1;
-    if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
-        Plugin::fatal("UDP client: setsockopt(SO_REUSEADDR) failed");
+    if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        int erc = errno;
+        Plugin::fatal("UDP client: setsockopt(SO_REUSEADDR) failed: " +
+                      to_string(erc) + " (" + strerror(erc) + ")");
+        freeaddrinfo(info);
+        info = nullptr;
+        return;
+    }
 
+#if 0
+    if (::connect(sockFD, (struct sockaddr *)addr, info->ai_addrlen) < 0) {
+        int erc = errno;
+        Plugin::fatal("UDP client: connect failed: " +
+                      to_string(erc) + " (" + strerror(erc) + ")");
+        freeaddrinfo(info);
+        info = nullptr;
+        return;
+    }
+#endif
+
+    // Receive UDP packages:
+    while (!quit) {
+        char buffer[1024];
+        struct sockaddr rx_addr;
+        socklen_t rx_addrlen;
+        int n = recvfrom(sockFD, buffer, sizeof(buffer), 0,
+                         &rx_addr, &rx_addrlen);
+        Plugin::debug("UDP recvfrom n=" + to_string(n));
+        if (quit)
+            break;
+        if (n < 0) {
+            int erc = errno;
+            Plugin::error("UDP client: recv failed: " +
+                          to_string(erc) + " (" + strerror(erc) + ")");
+            continue;
+        }
+        if (n > 0) {
+            Plugin::dump("UDP RX", buffer, n);
+        }
+    } // end while //
     freeaddrinfo(info);
+    info = nullptr;
 }
 
 void Server::close(Session* session)
