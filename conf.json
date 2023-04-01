@@ -6,7 +6,8 @@
     [ # Plugins to load.
         { 
             "name": "telnet", 
-            "path": "telnet/libbk_telnet.so", 
+            "path": "telnet/libbk_telnet.so",
+            "load": true,
             "services":
             [
                 { "name": "admin", "ip-v": 6, "host": "localhost", "port": 3000,
@@ -16,6 +17,7 @@
         {
             "name": "agw",
             "path": "agw/libbk_agw.so",
+            "load": false,
             "services":
             [
                 { "name": "agw", "ip-v": 4, "host": "localhost", "port": 8000,
@@ -30,6 +32,7 @@
         {
             "name": "ax25",
             "path": "ax25/libbk_ax25.so",
+            "load": false,
             "services":
             [
                 { "name": "ax25" }
@@ -38,15 +41,25 @@
         {
             "name": "ipserver",
             "path": "ipserver/libbk_ipserver.so",
+            "load": false,
             "services":
             [
                 { "name": "ipserver" }
             ]
-        }
+        },
+        {
+            "name": "udpclient",
+            "path": "udpclient/libbk_udpclient.so",
+            "load": true,
+            "services":
+            [
+                { "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93 }
+            ]
+        },
     ],
     "launch":
     [
         "gnome-terminal -- telnet localhost 3000",
-        "/usr/share/playonlinux/playonlinux --run \"Paxon\" 2>/dev/null &"
+        #"/usr/share/playonlinux/playonlinux --run \"Paxon\" 2>/dev/null &"
     ]
 }

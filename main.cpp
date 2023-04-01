@@ -181,25 +181,28 @@ int main(int argc, char** argv) {
         // Loop through the plugins list to load plugins;
         auto plugins = document["plugins"].toArray();
         for_each(plugins.begin(), plugins.end(),  [&] (json meta) {
-            string plugin_root = document["plugin_root"];
-            filesystem::path path = meta["path"].toString();
-            filesystem::path plugin_path = filesystem::weakly_canonical(
-                plugin_root.append("/").append(path)
-            );
-            if (!silent)
-                cout << "[i] Load " << plugin_path << endl;
-            auto so = SharedObject::create(plugin_path, meta);
-            // Bind and call the load method of the plugin:
-            const module_t* module_ptr = static_cast<module_t*>(so->getsym("module"));
-            if (!module_ptr)
-                throw runtime_error("Import error in " 
-                        + string(plugin_path.c_str()) 
-                        + ": Error: " + so->error_text());
-            so->module_ifc = *module_ptr;
-            if (module_ptr->load) {
-                ostringstream oss;
-                meta.write(oss);
-                module_ptr->load(so->id.c_str(), &admin_ifc, oss.str().c_str());
+            auto load = meta["load"];
+            if ((!load.isBool()) || (load.toBool())) {
+                string plugin_root = document["plugin_root"];
+                filesystem::path path = meta["path"].toString();
+                filesystem::path plugin_path = filesystem::weakly_canonical(
+                    plugin_root.append("/").append(path)
+                );
+                if (!silent)
+                    cout << "[i] Load " << plugin_path << endl;
+                auto so = SharedObject::create(plugin_path, meta);
+                // Bind and call the load method of the plugin:
+                const module_t* module_ptr = static_cast<module_t*>(so->getsym("module"));
+                if (!module_ptr)
+                    throw runtime_error("Import error in "
+                            + string(plugin_path.c_str())
+                            + ": Error: " + so->error_text());
+                so->module_ifc = *module_ptr;
+                if (module_ptr->load) {
+                    ostringstream oss;
+                    meta.write(oss);
+                    module_ptr->load(so->id.c_str(), &admin_ifc, oss.str().c_str());
+                }
             }
         });
 
