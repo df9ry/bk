@@ -10,14 +10,12 @@ set(SOURCES
     crcb.cpp
     plugin.cpp
     server.cpp
-    session.cpp
 )
 
 set(HEADERS
     crcb.hpp
     plugin.hpp
     server.hpp
-    session.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

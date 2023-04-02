@@ -3,6 +3,8 @@
 
 typedef enum {
     BK_ERC_OK = 0,
+    BK_ERC_ENGAGED,
+    BK_ERC_NOT_CONNECTED,
     BK_ERC_PUBLISH,
     BK_ERC_NO_META,
     BK_ERC_INV_META,
@@ -22,8 +24,10 @@ typedef enum {
     BK_ERC_SOCKET_ERROR,
     BK_ERC_BIND_ERROR,
     BK_ERC_LISTEN_ERROR,
+    BK_ERC_TALK_ERROR,
     BK_ERC_ACCEPT_ERROR,
     BK_ERC_NULL_BODY,
+    BK_ERC_INV_CRC_TYPE,
 } bk_error_t;
 
 #endif // ERROR_H
