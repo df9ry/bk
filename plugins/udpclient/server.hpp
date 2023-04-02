@@ -64,15 +64,41 @@ public:
     void close(Session* session);
 
 private:
-    std::unique_ptr<std::thread> worker{nullptr};
     void                         run();
+
+    jsonx::json                  meta;
+
+    service_t my_service_ifc {
+        .open_session = [] (void* client_loc_ctx, void** server_ctx_ptr,
+                           const char* meta, session_t** ifc_ptr) -> bk_error_t
+        {
+            return BK_ERC_OK;
+        },
+        .close_session = [] (void* server_ctx) -> bk_error_t
+        {
+            return BK_ERC_OK;
+        }
+    };
+
+    session_t my_session_ifc {
+        .get = [] (void* server_ctx, const char* head, resp_f fun) -> bk_error_t
+        {
+            return BK_ERC_OK;
+        },
+        .post = [] (void* server_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
+        {
+            return BK_ERC_OK;
+        }
+    };
+
+    std::unique_ptr<std::thread> worker{nullptr};
     addrinfo                    *info{nullptr};
     std::atomic_bool             quit{false};
     std::atomic_int              sockFD{-1};
-    jsonx::json                  meta;
     lookup_t                     lookup_ifc{};
     service_t                    target_service_ifc{};
-    std::vector<Session::Ptr_t>  sessions{};
+    std::unique_ptr<Session>    *session{nullptr};
     int                          session_id{0};
 };
+
 #endif // SERVER_HPP

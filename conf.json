@@ -53,7 +53,8 @@
             "load": true,
             "services":
             [
-                { "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93 }
+                { "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93,
+                  "crc": "crcB" }
             ]
         },
         {

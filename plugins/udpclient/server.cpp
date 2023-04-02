@@ -26,6 +26,7 @@ Server::~Server()
         freeaddrinfo(info);
         info = nullptr;
     }
+    session = nullptr;
 }
 
 Server::Ptr_t Server::create(json meta)
@@ -62,6 +63,8 @@ bk_error_t Server::stop()
 {
     Plugin::info("Stop server \"" + get_name() + "\"");
     quit = true;
+    if (session)
+        session->get()->close();
     ::close(sockFD);
     //worker->join();
     worker.release();
@@ -192,8 +195,5 @@ void Server::run()
 
 void Server::close(Session* session)
 {
-    auto iter = find_if(sessions.begin(), sessions.end(),
-                        [session](const auto &sp)->bool { return (session == sp.get()); });
-    if (iter != sessions.end())
-        *iter = nullptr;
+    session = nullptr;
 }
