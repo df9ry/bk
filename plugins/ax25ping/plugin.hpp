@@ -53,7 +53,7 @@ public:
     }
 
     static void dump(const std::string& msg, const char* pb, size_t cb) {
-        self->admin_ifc.dump(("agw:" + msg).c_str(), pb, cb);
+        self->admin_ifc.dump(("ax25ping:" + msg).c_str(), pb, cb);
     }
 
     const admin_t admin_ifc;

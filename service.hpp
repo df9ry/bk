@@ -25,7 +25,7 @@ public:
 
     static Map_t container;
 
-    Service(const jsonx::json &meta, SharedObject::Ptr_t so);
+    Service(const jsonx::json &meta, SharedObject::Ptr_t so, const service_t& service_ifc);
     ~Service();
 
     Service() = delete;
@@ -41,9 +41,10 @@ public:
         return (iter != container.end()) ? iter->second : nullptr;
     }
 
-    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so);
+    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so, const service_t& service_ifc);
 
-    static const Service& create_service(jsonx::json meta, SharedObject::Ptr_t so);
+    static const Service& create_service(jsonx::json meta, SharedObject::Ptr_t so,
+                                         const service_t& service_ifc);
 
     static bool remove_service(const std::string &name) {
         return container.erase(name);

@@ -85,7 +85,7 @@ bk_error_t Session::open(const service_t& _target_service_ifc)
     Plugin::info("Open telnet session \"" + name() + "\"");
     target_service_ifc = _target_service_ifc;
     // Get new session interface:
-    session_t *_target_session_ifc;
+    const session_t *_target_session_ifc;
     auto erc = _target_service_ifc.open_session(
                 this, &target_session_ctx, "{}", &_target_session_ifc);
     if (erc)

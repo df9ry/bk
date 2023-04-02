@@ -21,7 +21,7 @@ struct session_t {
 // Any service might offer this interface:
 struct service_t {
     bk_error_t (*open_session)
-        (void* client_loc_ctx, void** server_ctx_ptr, const char* meta, session_t** ifc_ptr);
+        (void* client_loc_ctx, void** server_ctx_ptr, const char* meta, const session_t** ifc_ptr);
     bk_error_t (*close_session) (void* server_ctx);
 };
 

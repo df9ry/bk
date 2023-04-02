@@ -9,14 +9,12 @@ project(${PROJECT_NAME}
 set(SOURCES
     plugin.cpp
     server.cpp
-    session.cpp
     timer.cpp
 )
 
 set(HEADERS
     plugin.hpp
     server.hpp
-    session.hpp
     timer.hpp
 )
 

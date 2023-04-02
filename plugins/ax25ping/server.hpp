@@ -1,7 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "session.hpp"
 #include "timer.hpp"
 
 #include <bk/module.h>
@@ -57,16 +56,19 @@ public:
     std::string get_name() const { return meta["name"]; }
     bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
-    void close(Session* session);
 
 private:
+    static void response_f(void* client_ctx,
+                           const char* head, const char* p_body, size_t c_body);
     void tick();
+    void response(const char* head, const char* p_body, size_t c_body);
 
     jsonx::json                  meta;
     Timer                        timer;
     lookup_t                     lookup_ifc{};
     service_t                    target_service_ifc{};
-    std::vector<Session::Ptr_t>  sessions{};
     int                          session_id{0};
+    void                        *server_ctx{nullptr};
+    const session_t             *server_ifc{nullptr};
 };
 #endif // SERVER_HPP

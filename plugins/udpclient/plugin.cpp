@@ -15,6 +15,18 @@
 using namespace std;
 using namespace jsonx;
 
+static const service_t my_service_ifc {
+    .open_session = [] (void* client_loc_ctx, void** server_ctx_ptr,
+                       const char* meta, const session_t** ifc_ptr) -> bk_error_t
+    {
+        return Server::self(client_loc_ctx)->open_session(server_ctx_ptr, meta, ifc_ptr);
+    },
+    .close_session = [] (void* server_ctx) -> bk_error_t
+    {
+        return Server::self(server_ctx)->close_session();
+    }
+};
+
 Plugin* Plugin::self{nullptr};
 
 bk_error_t Plugin::publish_services()
@@ -24,10 +36,11 @@ bk_error_t Plugin::publish_services()
     for_each(services.begin(), services.end(), [this] (json service) {
         stringstream oss;
         service.write(oss);
-        auto server = Server::create(service);
-        bk_error_t erc = admin_ifc.publish(id.c_str(),
-                                             oss.str().c_str(),
-                                             nullptr); // No service interface for now
+        auto p_server = Server::create(service);
+        assert(p_server);
+        const Server& server = *p_server;
+        bk_error_t erc = admin_ifc.publish(
+            id.c_str(), oss.str().c_str(), &my_service_ifc);
         if (erc != BK_ERC_OK)
             admin_ifc.debug(BK_FATAL, (
                                   "Unable to publish service \"" +

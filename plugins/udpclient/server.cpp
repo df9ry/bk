@@ -17,6 +17,17 @@
 using namespace std;
 using namespace jsonx;
 
+static const session_t my_session_ifc {
+    .get = [] (void* server_ctx, const char* head, resp_f fun) -> bk_error_t
+    {
+        return Server::self(server_ctx)->get(head, fun);
+    },
+    .post = [] (void* server_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
+    {
+        return Server::self(server_ctx)->post(head, p_body, c_body);
+    }
+};
+
 Server::Map_t Server::container;
 
 Server::Server(const json &_meta):
@@ -27,6 +38,8 @@ Server::Server(const json &_meta):
         crc_type = NONE;
     else if (_crc == "crcB")
         crc_type = CRC_B;
+    else
+        Plugin::fatal("UDPClient: Invalid CRC type " + _crc);
 }
 
 Server::~Server()
@@ -209,7 +222,7 @@ void Server::run()
     info = nullptr;
 }
 
-bk_error_t Server::open_session(void** server_ctx_ptr, const char* meta, session_t** ifc_ptr)
+bk_error_t Server::open_session(void** server_ctx_ptr, const char* meta, const session_t** ifc_ptr)
 {
     if (session_connected)
         return BK_ERC_ENGAGED;

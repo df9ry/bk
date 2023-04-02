@@ -3,6 +3,7 @@
 #include "so.hpp"
 #include "semaphore.hpp"
 #include "service.hpp"
+#include "cli.hpp"
 #include "bk/module.h"
 #include "bk/service.h"
 
@@ -20,13 +21,13 @@
 #include <cassert>
 #include <cstring>
 #include <cctype>
+#include <atomic>
 
 using namespace std;
 using namespace jsonx;
 
-bool quit{false};
-semaphore gate{};
-
+static atomic_bool quit{false};
+static semaphore gate{};
 static bool silent{false};
 
 static void print_version(ostream &os)
@@ -104,7 +105,62 @@ int main(int argc, char** argv) {
         // Create service "sys":
         json meta;
         meta["name"] = "sys";
-        auto sys_service = Service::create(meta, nullptr); // Not loaded from SO
+        static void*  client_ctx{nullptr};
+        static resp_f client_fun{nullptr};
+        static session_t my_session_ifc {
+            .get = [] (void* server_ctx, const char* head, resp_f fun) -> bk_error_t
+            {
+                if ((!client_ctx) || (server_ctx != (void*)1))
+                    return BK_ERC_NO_SUCH_SESSION;
+                client_fun = fun;
+                stringstream oss;
+                quit = !Cli::exec(head ? head : "", oss);
+                if (client_fun) {
+                    string response = oss.str();
+                    client_fun(client_ctx, "", response.c_str(), response.length());
+                }
+                gate.notify();
+                return BK_ERC_OK;
+            },
+            .post = [] (void* server_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
+            {
+                if ((!client_ctx) || (server_ctx != (void*)1))
+                    return BK_ERC_NO_SUCH_SESSION;
+                stringstream oss;
+                quit = !Cli::exec(p_body ? string(p_body, c_body) : "", oss);
+                if (client_fun) {
+                    string response = oss.str();
+                    client_fun(client_ctx, "", response.c_str(), response.length());
+                }
+                gate.notify();
+                return BK_ERC_OK;
+            }
+        };
+        service_t my_service_ifc {
+            .open_session = []
+                (void* client_loc_ctx, void** server_ctx_ptr, const char* meta, const session_t** ifc_ptr) -> bk_error_t
+            {
+                if (client_ctx)
+                    return BK_ERC_TO_MUCH_SESSIONS;
+                if (!ifc_ptr)
+                    return BK_ERC_NO_SESSION_IFC_PTR;
+                *ifc_ptr = &my_session_ifc;
+                if (!server_ctx_ptr)
+                    return BK_ERC_NO_SESSION_ID_PTR;
+                *server_ctx_ptr = (void*)1;
+                client_ctx = client_loc_ctx;
+                return BK_ERC_OK;
+            },
+                .close_session = [] (void* server_ctx) -> bk_error_t
+            {
+                if ((!client_ctx) || (server_ctx != (void*)1))
+                    return BK_ERC_NO_SUCH_SESSION;
+                client_ctx = nullptr;
+                client_fun = nullptr;
+                return BK_ERC_OK;
+            }
+        };
+        auto sys_service = Service::create(meta, nullptr, my_service_ifc); // Not loaded from SO
         // Administrator interface:
         admin_t admin_ifc {
             .publish = [] (const char*      _module_id,
@@ -114,6 +170,7 @@ int main(int argc, char** argv) {
                 try {
                     assert(_module_id);
                     assert(_meta);
+                    assert(_service_ifc);
                     json meta;
                     meta.parse(_meta);
                     string name = meta["name"];
@@ -122,7 +179,7 @@ int main(int argc, char** argv) {
                         throw runtime_error("Module not found: " + name);
                     if (!silent)
                         cout << "[d] Create service \"" << name << "\"" << endl;
-                    Service::create(meta, module_ptr).get();
+                    Service::create(meta, module_ptr, *_service_ifc).get();
                     return BK_ERC_OK;
                 } catch (exception &ex) {
                     cerr << "Unable to create service: " << ex.what() << endl;
