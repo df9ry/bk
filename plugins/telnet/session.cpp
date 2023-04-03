@@ -59,8 +59,8 @@ Session::~Session()
     Plugin::info("Close telnet session \"" + name() + "\"");
     ::close(fD);
     telnet_free(telnet);
-    if (target_service_ifc.close_session)
-        target_service_ifc.close_session(target_session_ctx);
+    if (target_service_reg.service_ifc->close_session)
+        target_service_reg.service_ifc->close_session(target_session_ctx);
 }
 
 Session::Ptr_t Session::create(Server& server, int fD, int id)
@@ -80,14 +80,16 @@ static void my_resp_fun(void* client_ctx, const char* head, const char* p_body, 
     session->output(p_body, c_body);
 }
 
-bk_error_t Session::open(const service_t& _target_service_ifc)
+bk_error_t Session::open(const service_reg_t& _target_service_reg)
 {
     Plugin::info("Open telnet session \"" + name() + "\"");
-    target_service_ifc = _target_service_ifc;
+    assert(_target_service_reg.service_ifc);
+    target_service_reg = _target_service_reg;
     // Get new session interface:
     const session_t *_target_session_ifc;
-    auto erc = _target_service_ifc.open_session(
-                this, &target_session_ctx, "{}", &_target_session_ifc);
+    auto erc = _target_service_reg.service_ifc->open_session(
+                    _target_service_reg.service_ctx, &target_session_ctx, "{}",
+                    &_target_session_ifc);
     if (erc)
         return erc;
     target_session_ifc = *_target_session_ifc;
@@ -108,8 +110,8 @@ bk_error_t Session::open(const service_t& _target_service_ifc)
 void Session::close()
 {
     Plugin::debug("Close: " + name());
-    if (target_service_ifc.close_session)
-        target_service_ifc.close_session(target_session_ctx);
+    if (target_service_reg.service_ifc->close_session)
+        target_service_reg.service_ifc->close_session(target_session_ctx);
     target_session_ctx = nullptr;
     server.close(this);
 }

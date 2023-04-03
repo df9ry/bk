@@ -25,7 +25,7 @@ public:
 
     static Map_t container;
 
-    Service(const jsonx::json &meta, SharedObject::Ptr_t so, const service_t& service_ifc);
+    Service(const jsonx::json &meta, SharedObject::Ptr_t so, const service_reg_t& service_reg);
     ~Service();
 
     Service() = delete;
@@ -41,16 +41,16 @@ public:
         return (iter != container.end()) ? iter->second : nullptr;
     }
 
-    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so, const service_t& service_ifc);
+    static Ptr_t create(jsonx::json meta, SharedObject::Ptr_t so, const service_reg_t& service_reg);
 
     static const Service& create_service(jsonx::json meta, SharedObject::Ptr_t so,
-                                         const service_t& service_ifc);
+                                         const service_reg_t& service_reg);
 
     static bool remove_service(const std::string &name) {
         return container.erase(name);
     }
 
-    const service_t service_ifc;
+    const service_reg_t service_reg;
 
     const std::string get_name() const { return meta["name"]; }
     const SharedObject::Ptr_t get_plugin() const { return so; }

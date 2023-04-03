@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include <bk/module.h>
+#include <bkbase/bkobject.hpp>
 
 #include <jsonx.hpp>
 
@@ -14,13 +15,15 @@
 
 struct addrinfo;
 
+namespace UdpClient {
+
 class ServerException: public std::runtime_error
 {
 public:
     ServerException(const std::string &msg): std::runtime_error(msg.c_str()) {}
 };
 
-class Server {
+class Server: public BkBase::BkObject {
 public:
     typedef std::shared_ptr<Server> Ptr_t;
     typedef std::map<std::string, Ptr_t> Map_t;
@@ -51,11 +54,6 @@ public:
         return container.erase(name);
     }
 
-    static Server *self(void* server_ctx) {
-        assert(server_ctx);
-        return static_cast<Server*>(server_ctx);
-    }
-
     Server(const jsonx::json &meta);
     ~Server();
 
@@ -63,7 +61,7 @@ public:
     Server(const Server& other) = delete;
     Server(Server&& other) = delete;
 
-    std::string get_name() const { return meta["name"]; }
+    virtual std::string name() const { return meta["name"]; }
     std::string get_welcome() const { return meta["welcome"]; }
     bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
@@ -88,5 +86,7 @@ private:
     service_t                    target_service_ifc{};
     Crc                          crc_type{UNDEF};
 };
+
+} // end namespace UdpClient //
 
 #endif // SERVER_HPP

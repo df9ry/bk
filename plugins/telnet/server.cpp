@@ -43,11 +43,11 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
         if (!lookup_ifc.find_service)
             Plugin::fatal("lookup_ifc.find_service is null");
         assert(lookup_ifc.find_service);
-        auto _target_service_ifc = lookup_ifc.find_service(target.c_str());
-        if (!_target_service_ifc)
+        auto _target_service_reg = lookup_ifc.find_service(target.c_str());
+        if (!_target_service_reg)
             Plugin::fatal("Target not found: \"" + target + "\"");
-        assert(_target_service_ifc);
-        target_service_ifc = *_target_service_ifc;
+        assert(_target_service_reg);
+        target_service_reg = *_target_service_reg;
     }
 
     worker.reset(new thread([this] () { run(); }));
@@ -186,7 +186,7 @@ void Server::run()
         else
             *iter = session_ptr;
         // Start session:
-        session_ptr->open(target_service_ifc);
+        session_ptr->open(target_service_reg);
     }
 }
 

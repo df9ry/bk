@@ -1,5 +1,5 @@
-#ifndef _PLUGIN_HPP
-#define _PLUGIN_HPP
+#ifndef _AX25PING_PLUGIN_HPP
+#define _AX25PING_PLUGIN_HPP
 
 #include <stdexcept>
 #include <string>
@@ -8,6 +8,9 @@
 
 #include <bk/error.h>
 #include <bk/module.h>
+#include <bkbase/bkobject.hpp>
+
+namespace AX25Ping {
 
 class PluginException: public std::runtime_error
 {
@@ -15,7 +18,7 @@ public:
     PluginException(const std::string &msg): std::runtime_error(msg.c_str()) {}
 };
 
-class Plugin {
+class Plugin: public BkBase::BkObject {
 public:
     static Plugin* self;
 
@@ -64,14 +67,16 @@ public:
     Plugin(const Plugin& other) = delete;
     Plugin(Plugin&& other) = delete;
 
-    std::string get_name() const { return meta["name"].toString(); }
+    virtual std::string name() const { return meta["name"]; }
     bk_error_t publish_services();
 
 private:
     Plugin(const std::string& _id, const admin_t *_admin_ifc, const jsonx::json& _meta):
-        id{_id}, admin_ifc{*_admin_ifc}, meta{_meta}
+        BkBase::BkObject(), id{_id}, admin_ifc{*_admin_ifc}, meta{_meta}
     {}
 
 };
 
-#endif // _PLUGIN_HPP
+} // end namespace AX25Ping //
+
+#endif // _AX25PING_PLUGIN_HPP

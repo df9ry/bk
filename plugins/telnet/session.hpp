@@ -33,7 +33,7 @@ public:
     Server&           server;
     std::atomic<bool> quit{true};
 
-    bk_error_t        open(const service_t& target_service_ifc);
+    bk_error_t        open(const service_reg_t& target_service_reg);
     void              close();
 
     void              input( const char* pb, const size_t cb);
@@ -45,7 +45,7 @@ private:
     const std::atomic<int>       fD;
     telnet_t*                    telnet;
     std::unique_ptr<std::thread> reader{nullptr};
-    service_t                    target_service_ifc{};
+    service_reg_t                target_service_reg{};
     session_t                    target_session_ifc{};
     void*                        target_session_ctx{nullptr};
 

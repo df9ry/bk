@@ -15,6 +15,8 @@
 using namespace std;
 using namespace jsonx;
 
+namespace AX25Ping {
+
 Plugin* Plugin::self{nullptr};
 
 bk_error_t Plugin::publish_services()
@@ -55,7 +57,7 @@ extern "C" {
             return BK_ERC_OK;
         },
         .start = [] (const lookup_t* lookup_ifc)->bk_error_t {
-            Plugin::info("Start plugin \"" + Plugin::self->get_name() + "\"");
+            Plugin::info("Start plugin \"" + Plugin::self->name() + "\"");
             // Start all server:
             for_each(Server::container.begin(), Server::container.end(),
                      [lookup_ifc] (auto &pair)
@@ -63,7 +65,7 @@ extern "C" {
                 auto server = pair.second;
                 bk_error_t erc = server->start(lookup_ifc);
                 if (erc != BK_ERC_OK)
-                    Plugin::fatal("Start plugin \"" + Plugin::self->get_name() + "\" " +
+                    Plugin::fatal("Start plugin \"" + Plugin::self->name() + "\" " +
                          "failed with error code " + to_string(erc));
             });
             return BK_ERC_OK;
@@ -76,11 +78,13 @@ extern "C" {
                 auto server = pair.second;
                 bk_error_t erc = server->stop();
                 if (erc != BK_ERC_OK)
-                    Plugin::fatal("Stop plugin \"" + Plugin::self->get_name() + "\" " +
+                    Plugin::fatal("Stop plugin \"" + Plugin::self->name() + "\" " +
                          "failed with error code " + to_string(erc));
             });
-            Plugin::info("Stop plugin \"" + Plugin::self->get_name() + "\"");
+            Plugin::info("Stop plugin \"" + Plugin::self->name() + "\"");
             return BK_ERC_OK;
         }
     };
 } // end extern C //
+
+} // end namespace AX25Ping //

@@ -8,6 +8,9 @@
 
 #include <bk/error.h>
 #include <bk/module.h>
+#include <bkbase/bkobject.hpp>
+
+namespace UdpClient {
 
 class PluginException: public std::runtime_error
 {
@@ -15,7 +18,7 @@ public:
     PluginException(const std::string &msg): std::runtime_error(msg.c_str()) {}
 };
 
-class Plugin {
+class Plugin: public BkBase::BkObject {
 public:
     static Plugin* self;
 
@@ -64,7 +67,7 @@ public:
     Plugin(const Plugin& other) = delete;
     Plugin(Plugin&& other) = delete;
 
-    std::string get_name() const { return meta["name"].toString(); }
+    virtual std::string name() const { return meta["name"]; }
     bk_error_t publish_services();
 
 private:
@@ -73,5 +76,7 @@ private:
     {}
 
 };
+
+} // end namespace UdpClient //
 
 #endif // _PLUGIN_HPP

@@ -50,10 +50,10 @@ static void help(ostream &os, const char *name)
 static int is_sys_session_open{false};
 
 static const lookup_t lookup_ifc {
-    .find_service = [] (const char* server_name) -> const service_t*
+    .find_service = [] (const char* server_name) -> const service_reg_t*
     {
         auto service = Service::lookup(server_name);
-        return service ? &service->service_ifc : nullptr;
+        return service ? &service->service_reg : nullptr;
     }
 };
 
@@ -160,17 +160,18 @@ int main(int argc, char** argv) {
                 return BK_ERC_OK;
             }
         };
-        auto sys_service = Service::create(meta, nullptr, my_service_ifc); // Not loaded from SO
+        service_reg_t my_service_reg { .service_ctx = nullptr, .service_ifc = &my_service_ifc };
+        auto sys_service = Service::create(meta, nullptr, my_service_reg); // Not loaded from SO
         // Administrator interface:
         admin_t admin_ifc {
-            .publish = [] (const char*      _module_id,
-                           const char*      _meta,
-                           const service_t* _service_ifc)->bk_error_t
+            .publish = [] (const char*          _module_id,
+                           const char*          _meta,
+                           const service_reg_t* _service_reg)->bk_error_t
             {
                 try {
                     assert(_module_id);
                     assert(_meta);
-                    assert(_service_ifc);
+                    assert(_service_reg);
                     json meta;
                     meta.parse(_meta);
                     string name = meta["name"];
@@ -179,7 +180,7 @@ int main(int argc, char** argv) {
                         throw runtime_error("Module not found: " + name);
                     if (!silent)
                         cout << "[d] Create service \"" << name << "\"" << endl;
-                    Service::create(meta, module_ptr, *_service_ifc).get();
+                    Service::create(meta, module_ptr, *_service_reg).get();
                     return BK_ERC_OK;
                 } catch (exception &ex) {
                     cerr << "Unable to create service: " << ex.what() << endl;

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <vector>
+#include <exception>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,21 +18,35 @@
 using namespace std;
 using namespace jsonx;
 
+namespace UdpClient {
+
 static const session_t my_session_ifc {
     .get = [] (void* server_ctx, const char* head, resp_f fun) -> bk_error_t
     {
-        return Server::self(server_ctx)->get(head, fun);
+        try {
+            return BkBase::self<Server>(server_ctx).get(head, fun);
+        }
+        catch (const exception& ex) {
+            Plugin::error(string("UdpClient::get() exception: ") + ex.what());
+            return BK_ERC_RUNTIME_EXCEPTION;
+        }
     },
     .post = [] (void* server_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
     {
-        return Server::self(server_ctx)->post(head, p_body, c_body);
+        try {
+            return BkBase::self<Server>(server_ctx).post(head, p_body, c_body);
+        }
+        catch (const exception& ex) {
+            Plugin::error(string("UdpClient::post() exception: ") + ex.what());
+            return BK_ERC_RUNTIME_EXCEPTION;
+        }
     }
 };
 
 Server::Map_t Server::container;
 
 Server::Server(const json &_meta):
-    meta{_meta}
+    BkBase::BkObject(), meta{_meta}
 {
     auto _crc = meta["crc"].toString();
     if ((_crc == "") || (_crc == "NONE"))
@@ -60,7 +75,7 @@ Server::Ptr_t Server::create(json meta)
 
 bk_error_t Server::start(const lookup_t* _lookup_ifc)
 {
-    Plugin::info("Start server \"" + get_name() + "\"");
+    Plugin::info("Start server \"" + name() + "\"");
     assert(_lookup_ifc);
     lookup_ifc = *_lookup_ifc;
     if (crc_type == UNDEF)
@@ -71,7 +86,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
 
 bk_error_t Server::stop()
 {
-    Plugin::info("Stop server \"" + get_name() + "\"");
+    Plugin::info("Stop server \"" + name() + "\"");
     quit = true;
     ::close(sockFD);
     //worker->join();
@@ -138,7 +153,7 @@ void Server::run()
     char ipStr[INET6_ADDRSTRLEN];
     inet_ntop(info->ai_family, target_addr, ipStr, sizeof(ipStr));
 
-    Plugin::info("UDP client \"" + get_name() + "\" using " +
+    Plugin::info("UDP client \"" + name() + "\" using " +
                  ipVer + ":" + ipStr + ":" + port);
 
     // let's create a new socket, socketFD is returned as descriptor
@@ -231,14 +246,14 @@ bk_error_t Server::open_session(void** server_ctx_ptr, const char* meta, const s
     if (ifc_ptr)
         *ifc_ptr = &my_session_ifc;
     session_connected = true;
-    Plugin::info("Session in " + get_name() + " opened");
+    Plugin::info("Session in " + name() + " opened");
     return BK_ERC_OK;
 }
 
 bk_error_t Server::close_session()
 {
     if (session_connected) {
-        Plugin::info("Session in " + get_name() + " closed");
+        Plugin::info("Session in " + name() + " closed");
         session_connected = false;
     }
     response_f = nullptr;
@@ -284,3 +299,5 @@ bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
     }
     return BK_ERC_OK;
 }
+
+} // end namespace UdpClient //

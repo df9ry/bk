@@ -28,6 +28,7 @@ typedef enum {
     BK_ERC_ACCEPT_ERROR,
     BK_ERC_NULL_BODY,
     BK_ERC_INV_CRC_TYPE,
+    BK_ERC_RUNTIME_EXCEPTION,
 } bk_error_t;
 
 #endif // ERROR_H

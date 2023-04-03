@@ -66,7 +66,7 @@ private:
 
     jsonx::json                  meta;
     lookup_t                     lookup_ifc{};
-    service_t                    target_service_ifc{};
+    service_reg_t                target_service_reg{};
     std::vector<Session::Ptr_t>  sessions{};
     int                          session_id{0};
 };

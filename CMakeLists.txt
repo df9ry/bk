@@ -8,6 +8,7 @@ project(${PROJECT_NAME}
 )
 
 configure_file(version.hpp.in version.h)
+add_subdirectory("bkbase")
 add_subdirectory("plugins/telnet")
 add_subdirectory("plugins/agw")
 add_subdirectory("plugins/ax25")

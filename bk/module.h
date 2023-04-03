@@ -13,10 +13,16 @@ enum grade_t {
     BK_DEBUG = 'd', BK_INFO = 'i', BK_WARNING = 'w', BK_ERROR = 'e', BK_FATAL = 'f'
 };
 
+// Type for service registration:
+struct service_reg_t {
+    void            *service_ctx; // Context (self of service provider)
+    const service_t *service_ifc; // Interface
+};
+
 // Interface to publish and withdraw services:
 struct admin_t {
     bk_error_t (*publish)  (const char* module_id, const char* meta,
-                            const service_t* service_if);
+                            const service_reg_t* service);
     bk_error_t (*withdraw) (const char* module_id, const char* name);
     void       (*debug) (grade_t grade, const char* text);
     void       (*dump)  (const char* text, const char* pb, size_t cb);
@@ -24,7 +30,7 @@ struct admin_t {
 
 // Lookup interface:
 struct lookup_t {
-    const service_t* (*find_service) (const char* server);
+    const service_reg_t* (*find_service) (const char* server);
 };
 
 // Interface to handle loadable modules:

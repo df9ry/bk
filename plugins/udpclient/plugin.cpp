@@ -15,15 +15,29 @@
 using namespace std;
 using namespace jsonx;
 
+namespace UdpClient {
+
 static const service_t my_service_ifc {
     .open_session = [] (void* client_loc_ctx, void** server_ctx_ptr,
                        const char* meta, const session_t** ifc_ptr) -> bk_error_t
     {
-        return Server::self(client_loc_ctx)->open_session(server_ctx_ptr, meta, ifc_ptr);
+        try {
+            return BkBase::self<Server>(client_loc_ctx).open_session(server_ctx_ptr, meta, ifc_ptr);
+        }
+        catch (const exception& ex) {
+            Plugin::error(string("UdpClient::Plugin::open_session() exception") + ex.what());
+            return BK_ERC_RUNTIME_EXCEPTION;
+        }
     },
     .close_session = [] (void* server_ctx) -> bk_error_t
     {
-        return Server::self(server_ctx)->close_session();
+        try {
+            return BkBase::self<Server>(server_ctx).close_session();
+        }
+        catch (const exception& ex) {
+            Plugin::error(string("UdpClient::Plugin::close_session() exception") + ex.what());
+            return BK_ERC_RUNTIME_EXCEPTION;
+        }
     }
 };
 
@@ -39,8 +53,9 @@ bk_error_t Plugin::publish_services()
         auto p_server = Server::create(service);
         assert(p_server);
         const Server& server = *p_server;
+        service_reg_t reg{ .service_ctx = p_server.get(), .service_ifc = &my_service_ifc };
         bk_error_t erc = admin_ifc.publish(
-            id.c_str(), oss.str().c_str(), &my_service_ifc);
+            id.c_str(), oss.str().c_str(), &reg);
         if (erc != BK_ERC_OK)
             admin_ifc.debug(BK_FATAL, (
                                   "Unable to publish service \"" +
@@ -79,7 +94,7 @@ extern "C" {
             return BK_ERC_OK;
         },
         .start = [] (const lookup_t* lookup_ifc)->bk_error_t {
-            Plugin::info("Start plugin \"" + Plugin::self->get_name() + "\"");
+        Plugin::info("Start plugin \"" + Plugin::self->name() + "\"");
             // Start all server:
             for_each(Server::container.begin(), Server::container.end(),
                      [lookup_ifc] (auto &pair)
@@ -87,7 +102,7 @@ extern "C" {
                 auto server = pair.second;
                 bk_error_t erc = server->start(lookup_ifc);
                 if (erc != BK_ERC_OK)
-                    Plugin::fatal("Start plugin \"" + Plugin::self->get_name() + "\" " +
+                    Plugin::fatal("Start plugin \"" + Plugin::self->name() + "\" " +
                          "failed with error code " + to_string(erc));
             });
             return BK_ERC_OK;
@@ -100,11 +115,14 @@ extern "C" {
                 auto server = pair.second;
                 bk_error_t erc = server->stop();
                 if (erc != BK_ERC_OK)
-                    Plugin::fatal("Stop plugin \"" + Plugin::self->get_name() + "\" " +
+                    Plugin::fatal("Stop plugin \"" + Plugin::self->name() + "\" " +
                          "failed with error code " + to_string(erc));
             });
-            Plugin::info("Stop plugin \"" + Plugin::self->get_name() + "\"");
+            Plugin::info("Stop plugin \"" + Plugin::self->name() + "\"");
             return BK_ERC_OK;
         }
     };
 } // end extern C //
+
+} // end namespace UdpClient //
+

@@ -8,6 +8,8 @@
 using namespace std;
 using namespace jsonx;
 
+namespace AX25Ping {
+
 Server::Map_t Server::container;
 
 void Server::response_f(void* client_ctx, const char* head, const char* p_body, size_t c_body)
@@ -17,6 +19,7 @@ void Server::response_f(void* client_ctx, const char* head, const char* p_body, 
 }
 
 Server::Server(const json &_meta):
+    BkBase::BkObject(),
     meta{_meta}
 {}
 
@@ -34,7 +37,7 @@ Server::Ptr_t Server::create(json meta)
 
 bk_error_t Server::start(const lookup_t* _lookup_ifc)
 {
-    Plugin::info("Start server \"" + get_name() + "\"");
+    Plugin::info("Start server \"" + name() + "\"");
     assert(_lookup_ifc);
     lookup_ifc = *_lookup_ifc;
 
@@ -43,16 +46,17 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
         if (!lookup_ifc.find_service)
             Plugin::fatal("AX25 Ping: lookup_ifc.find_service is null");
         assert(lookup_ifc.find_service);
-        auto _target_service_ifc = lookup_ifc.find_service(target.c_str());
-        if (!_target_service_ifc)
+        auto _target_service_reg = lookup_ifc.find_service(target.c_str());
+        if (!_target_service_reg)
             Plugin::fatal("AX25 Ping: Target not found: \"" + target + "\"");
-        assert(_target_service_ifc);
-        target_service_ifc = *_target_service_ifc;
+        assert(_target_service_reg);
+        target_service_reg = *_target_service_reg;
         // Connect to target:
-        if (!target_service_ifc.open_session)
+        if (!target_service_reg.service_ifc->open_session)
             Plugin::fatal("AX25 Ping: target_service_ifc.open_session is null");
-        assert(target_service_ifc.open_session);
-        auto erc = target_service_ifc.open_session(this, &server_ctx, "", &server_ifc);
+        assert(target_service_reg.service_ifc->open_session);
+        auto erc = target_service_reg.service_ifc->open_session(
+            target_service_reg.service_ctx, &server_ctx, "", &server_ifc);
         if (erc != BK_ERC_OK)
             Plugin::fatal("AX25 Ping: target_service_ifc.open_session failed with erc=" + to_string(erc));
         if (!server_ifc)
@@ -80,7 +84,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
 
 bk_error_t Server::stop()
 {
-    Plugin::info("Stop server \"" + get_name() + "\"");
+    Plugin::info("Stop server \"" + name() + "\"");
     return BK_ERC_OK;
 }
 
@@ -98,3 +102,5 @@ void Server::response(const char* head, const char* p_body, size_t c_body)
 {
     Plugin::dump("Response", p_body, c_body);
 }
+
+} // end namespace AX25Ping //

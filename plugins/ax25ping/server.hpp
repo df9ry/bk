@@ -1,9 +1,10 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef _AX25PING_SERVER_HPP
+#define _AX25PING_SERVER_HPP
 
 #include "timer.hpp"
 
 #include <bk/module.h>
+#include <bkbase/bkobject.hpp>
 
 #include <jsonx.hpp>
 
@@ -11,13 +12,15 @@
 #include <memory>
 #include <map>
 
+namespace AX25Ping {
+
 class ServerException: public std::runtime_error
 {
 public:
     ServerException(const std::string &msg): std::runtime_error(msg.c_str()) {}
 };
 
-class Server {
+class Server: public BkBase::BkObject {
 public:
     typedef std::shared_ptr<Server> Ptr_t;
     typedef std::map<std::string, Ptr_t> Map_t;
@@ -53,7 +56,7 @@ public:
     Server(const Server& other) = delete;
     Server(Server&& other) = delete;
 
-    std::string get_name() const { return meta["name"]; }
+    std::string name() const { return meta["name"]; }
     bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
 
@@ -66,9 +69,12 @@ private:
     jsonx::json                  meta;
     Timer                        timer;
     lookup_t                     lookup_ifc{};
-    service_t                    target_service_ifc{};
+    service_reg_t                target_service_reg{};
     int                          session_id{0};
     void                        *server_ctx{nullptr};
     const session_t             *server_ifc{nullptr};
 };
-#endif // SERVER_HPP
+
+} // end namespace AX25Ping //
+
+#endif // _AX25PING_SERVER_HPP
