@@ -14,15 +14,20 @@ typedef void (*resp_f)(void* client_ctx, const char* head, const char* p_body, s
 
 // Any session might offer this interface:
 struct session_t {
-    bk_error_t (*get) (void* server_ctx, const char* head, resp_f fun);
-    bk_error_t (*post)(void* server_ctx, const char* head, const char* p_body, size_t c_body);
+    bk_error_t (*get) (void* session_ctx, const char* head, resp_f fun, void* ctx);
+    bk_error_t (*post)(void* session_ctx, const char* head, const char* p_body, size_t c_body);
+};
+
+// Type for session registration:
+struct session_reg_t {
+    session_t  ifc; // Interface
+    void      *ctx; // Context (self of service provider)
 };
 
 // Any service might offer this interface:
 struct service_t {
-    bk_error_t (*open_session)
-        (void* client_loc_ctx, void** server_ctx_ptr, const char* meta, const session_t** ifc_ptr);
-    bk_error_t (*close_session) (void* server_ctx);
+    bk_error_t (*open_session)  (void* server_ctx, const char* meta, session_reg_t* reg);
+    bk_error_t (*close_session) (void* server_ctx, const void* session_ctx);
 };
 
 #ifdef __cplusplus

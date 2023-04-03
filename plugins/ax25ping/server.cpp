@@ -1,6 +1,8 @@
 #include "server.hpp"
 #include "plugin.hpp"
 
+#include <bkbase/bkerror.hpp>
+
 #include <cstring>
 #include <algorithm>
 #include <cassert>
@@ -51,27 +53,31 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
             Plugin::fatal("AX25 Ping: Target not found: \"" + target + "\"");
         assert(_target_service_reg);
         target_service_reg = *_target_service_reg;
-        // Connect to target:
-        if (!target_service_reg.service_ifc->open_session)
+        // Connect to target server:
+        if (!target_service_reg.ifc.open_session)
             Plugin::fatal("AX25 Ping: target_service_ifc.open_session is null");
-        assert(target_service_reg.service_ifc->open_session);
-        auto erc = target_service_reg.service_ifc->open_session(
-            target_service_reg.service_ctx, &server_ctx, "", &server_ifc);
+        assert(target_service_reg.ifc.open_session);
+        if (!target_service_reg.ifc.close_session)
+            Plugin::fatal("AX25 Ping: target_service_ifc.close_session is null");
+        assert(target_service_reg.ifc.close_session);
+        // Create target session:
+        auto erc = target_service_reg.ifc.open_session(
+            target_service_reg.ctx, "{}", &target_session_reg);
         if (erc != BK_ERC_OK)
-            Plugin::fatal("AX25 Ping: target_service_ifc.open_session failed with erc=" + to_string(erc));
-        if (!server_ifc)
-            Plugin::fatal("AX25 Ping: server_ifc is null");
-        assert(server_ifc);
+            Plugin::fatal((string("AX25 Ping: open_session() failed with erc=")
+                            + to_string(erc) + ": "
+                           + BkBase::bk_error_message(erc)).c_str());
+        if (!target_session_reg.ifc.get)
+            Plugin::fatal("AX25 Ping: get() is not defined");
+        assert(target_session_reg.ifc.get);
+        if (!target_session_reg.ifc.post)
+            Plugin::fatal("AX25 Ping: post() is not defined");
+        assert(target_session_reg.ifc.post);
         // Set callback function:
-        if (!server_ifc->get)
-            Plugin::fatal("AX25 Ping: server_ifc.get is null");
-        assert(server_ifc->get);
-        erc = server_ifc->get(server_ctx, "", response_f);
+        erc = target_session_reg.ifc.get(target_session_reg.ctx, "", response_f, this);
         if (erc != BK_ERC_OK)
-            Plugin::fatal("AX25 Ping: server_ifc->get failed with erc=" + to_string(erc));
-        if (!server_ifc->post)
-            Plugin::fatal("AX25 Ping: server_ifc.post is null");
-        assert(server_ifc->post);
+            Plugin::fatal((string("AX25 Ping: server_ifc->get failed with erc=")
+                           + to_string(erc) + ": " + BkBase::bk_error_message(erc)).c_str());
         // Start timer:
         int interval = meta["interval"];
         if (!interval)
@@ -91,11 +97,12 @@ bk_error_t Server::stop()
 void Server::tick()
 {
     Plugin::debug("AX25Ping tick");
-    assert(server_ifc->post);
+    assert(target_session_reg.ifc.post);
     char body[] { 0x00, 0x00 };
-    auto erc = server_ifc->post(server_ctx, "", body, sizeof(body));
+    auto erc = target_session_reg.ifc.post(target_session_reg.ctx, "", body, sizeof(body));
     if (erc != BK_ERC_OK)
-        Plugin::error("server_ifc->post failed with erc=" + to_string(erc));
+        Plugin::error((string("server_ifc->post failed with erc=")
+                       + to_string(erc) + ": " + BkBase::bk_error_message(erc)).c_str());
 }
 
 void Server::response(const char* head, const char* p_body, size_t c_body)

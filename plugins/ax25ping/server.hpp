@@ -70,9 +70,7 @@ private:
     Timer                        timer;
     lookup_t                     lookup_ifc{};
     service_reg_t                target_service_reg{};
-    int                          session_id{0};
-    void                        *server_ctx{nullptr};
-    const session_t             *server_ifc{nullptr};
+    session_reg_t                target_session_reg{};
 };
 
 } // end namespace AX25Ping //

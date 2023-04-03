@@ -21,20 +21,20 @@ using namespace jsonx;
 namespace UdpClient {
 
 static const session_t my_session_ifc {
-    .get = [] (void* server_ctx, const char* head, resp_f fun) -> bk_error_t
+    .get = [] (void* session_ctx, const char* head, resp_f fun, void* ctx) -> bk_error_t
     {
         try {
-            return BkBase::self<Server>(server_ctx).get(head, fun);
+            return BkBase::self<Server>(session_ctx).get(head, fun, ctx);
         }
         catch (const exception& ex) {
             Plugin::error(string("UdpClient::get() exception: ") + ex.what());
             return BK_ERC_RUNTIME_EXCEPTION;
         }
     },
-    .post = [] (void* server_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
+    .post = [] (void* session_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
     {
         try {
-            return BkBase::self<Server>(server_ctx).post(head, p_body, c_body);
+            return BkBase::self<Server>(session_ctx).post(head, p_body, c_body);
         }
         catch (const exception& ex) {
             Plugin::error(string("UdpClient::post() exception: ") + ex.what());
@@ -209,16 +209,16 @@ void Server::run()
         }
         if (n > 0) {
             Plugin::dump("UDP RX", buffer, n);
-            if (response_f) {
+            if (response_fun) {
                 switch (crc_type) {
                 case NONE:
-                    response_f(this, "", buffer, n);
+                    response_fun(response_ctx, "", buffer, n);
                     break;
                 case CRC_B:
                     if (n >= 2) {
                         auto crc = CrcB::crc((const uint8_t*)buffer, n-2);
                         if (((crc >> 8) == buffer[n-2]) && ((crc & 0x00ff) == buffer[n-1])) {
-                            response_f(this, "", buffer, n-2);
+                            response_fun(response_ctx, "", buffer, n-2);
                         } else {
                             Plugin::warning("Invalid CRC");
                         }
@@ -237,34 +237,33 @@ void Server::run()
     info = nullptr;
 }
 
-bk_error_t Server::open_session(void** server_ctx_ptr, const char* meta, const session_t** ifc_ptr)
+bk_error_t Server::open_session(const char* meta, session_reg_t* reg)
 {
     if (session_connected)
         return BK_ERC_ENGAGED;
-    if (server_ctx_ptr)
-        *server_ctx_ptr = this;
-    if (ifc_ptr)
-        *ifc_ptr = &my_session_ifc;
+    *reg = session_reg_t{ my_session_ifc, this };
     session_connected = true;
     Plugin::info("Session in " + name() + " opened");
     return BK_ERC_OK;
 }
 
-bk_error_t Server::close_session()
+bk_error_t Server::close_session(const void* session_ctx)
 {
     if (session_connected) {
         Plugin::info("Session in " + name() + " closed");
         session_connected = false;
     }
-    response_f = nullptr;
+    response_fun = nullptr;
+    response_ctx = nullptr;
     return BK_ERC_OK;
 }
 
-bk_error_t Server::get(const char* head, resp_f fun)
+bk_error_t Server::get(const char* head, resp_f fun, void* ctx)
 {
     if (!session_connected)
         return BK_ERC_NOT_CONNECTED;
-    response_f = fun;
+    response_fun = fun;
+    response_ctx = ctx;
     return BK_ERC_OK;
 }
 

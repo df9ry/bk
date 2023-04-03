@@ -7,10 +7,11 @@ project(${PROJECT_NAME}
 )
 
 set(SOURCES
-    bkobject.cpp
+    bkerror.cpp
 )
 
 set(HEADERS
+    bkerror.hpp
     bkobject.hpp
 )
 

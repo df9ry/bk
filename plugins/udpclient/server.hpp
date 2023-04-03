@@ -65,12 +65,15 @@ public:
     std::string get_welcome() const { return meta["welcome"]; }
     bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
-    bk_error_t open_session(void** server_ctx_ptr, const char* meta, const session_t** ifc_ptr);
-    bk_error_t close_session();
-    bool session_connected{false};
-    resp_f response_f{nullptr};
-    bk_error_t get(const char* head, resp_f fun);
+
+    bk_error_t open_session(const char* meta, session_reg_t* reg);
+    bk_error_t close_session(const void* session_ctx);
+    bk_error_t get(const char* head, resp_f fun, void* ctx);
     bk_error_t post(const char* head, const char* p_body, size_t c_body);
+
+    bool session_connected{false};
+    resp_f response_fun{nullptr};
+    void *response_ctx{nullptr};
 
 private:
     void run();
@@ -84,6 +87,7 @@ private:
     std::atomic_int              sockFD{-1};
     lookup_t                     lookup_ifc{};
     service_t                    target_service_ifc{};
+    session_reg_t                target_session_reg{};
     Crc                          crc_type{UNDEF};
 };
 

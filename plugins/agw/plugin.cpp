@@ -22,18 +22,7 @@ bk_error_t Plugin::publish_services()
     assert(Plugin::self);
     auto services = Plugin::self->meta["services"].toArray();
     for_each(services.begin(), services.end(), [this] (json service) {
-        stringstream oss;
-        service.write(oss);
-        auto server = Server::create(service);
-        bk_error_t erc = admin_ifc.publish(id.c_str(),
-                                             oss.str().c_str(),
-                                             nullptr); // No service interface for now
-        if (erc != BK_ERC_OK)
-            admin_ifc.debug(BK_FATAL, (
-                                  "Unable to publish service \"" +
-                                  service["name"].toString() +
-                                  "\"!. ERC = " +
-                                  to_string(erc)).c_str());
+        Server::create(service);
     }); // end for_each //
     return BK_ERC_OK;
 }

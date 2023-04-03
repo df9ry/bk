@@ -38,10 +38,12 @@ target_link_directories(${PROJECT_NAME} PUBLIC
 
 if (WIN32)
     target_link_libraries(${PROJECT_NAME}
+        bk_base
         JsonX
 )
 else()
     target_link_libraries(${PROJECT_NAME}
+        bk_base
         JsonX
         stdc++
         telnet

@@ -46,8 +46,7 @@ private:
     telnet_t*                    telnet;
     std::unique_ptr<std::thread> reader{nullptr};
     service_reg_t                target_service_reg{};
-    session_t                    target_session_ifc{};
-    void*                        target_session_ctx{nullptr};
+    session_reg_t                target_session_reg{};
 
     void                         run();
 };

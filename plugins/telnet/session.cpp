@@ -2,6 +2,8 @@
 #include "server.hpp"
 #include "plugin.hpp"
 
+#include <bkbase/bkerror.hpp>
+
 #include <libtelnet.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -59,8 +61,8 @@ Session::~Session()
     Plugin::info("Close telnet session \"" + name() + "\"");
     ::close(fD);
     telnet_free(telnet);
-    if (target_service_reg.service_ifc->close_session)
-        target_service_reg.service_ifc->close_session(target_session_ctx);
+    if (target_service_reg.ifc.close_session)
+        target_service_reg.ifc.close_session(target_service_reg.ctx, target_session_reg.ctx);
 }
 
 Session::Ptr_t Session::create(Server& server, int fD, int id)
@@ -83,23 +85,19 @@ static void my_resp_fun(void* client_ctx, const char* head, const char* p_body, 
 bk_error_t Session::open(const service_reg_t& _target_service_reg)
 {
     Plugin::info("Open telnet session \"" + name() + "\"");
-    assert(_target_service_reg.service_ifc);
     target_service_reg = _target_service_reg;
     // Get new session interface:
-    const session_t *_target_session_ifc;
-    auto erc = _target_service_reg.service_ifc->open_session(
-                    _target_service_reg.service_ctx, &target_session_ctx, "{}",
-                    &_target_session_ifc);
+    auto erc = _target_service_reg.ifc.open_session(
+                    _target_service_reg.ctx, "", &target_session_reg);
     if (erc)
         return erc;
-    target_session_ifc = *_target_session_ifc;
 
     // Output welcome message, if defined:
     string welcome = server.get_welcome();
     if (!welcome.empty())
         output(welcome.c_str(), welcome.length());
     // Tell the server our reponse function:
-    target_session_ifc.get(target_session_ctx, "", my_resp_fun);
+    target_session_reg.ifc.get(target_session_reg.ctx, "", my_resp_fun, this);
 
     reader.reset(new thread([this] () { run(); }));
     reader->detach();
@@ -110,9 +108,9 @@ bk_error_t Session::open(const service_reg_t& _target_service_reg)
 void Session::close()
 {
     Plugin::debug("Close: " + name());
-    if (target_service_reg.service_ifc->close_session)
-        target_service_reg.service_ifc->close_session(target_session_ctx);
-    target_session_ctx = nullptr;
+    if (target_service_reg.ifc.close_session)
+        target_service_reg.ifc.close_session(target_service_reg.ctx, target_session_reg.ctx);
+    target_session_reg.ctx = nullptr;
     server.close(this);
 }
 
@@ -140,10 +138,11 @@ void Session::output(const char* pb, const size_t cb)
 
 void Session::input(const char* pb, const size_t cb)
 {
-    if (target_session_ifc.post) {
-        auto erc = target_session_ifc.post(target_session_ctx, "", pb, cb);
+    if (target_session_reg.ifc.post) {
+        auto erc = target_session_reg.ifc.post(target_session_reg.ctx, "", pb, cb);
         if (erc)
-            Plugin::error("Post error: " + to_string(erc));
+            Plugin::error("Telnet session post() error: " + to_string(erc) + ": " +
+                          BkBase::bk_error_message(erc));
     } else {
         Plugin::dump("Missed post", pb, cb);
     }

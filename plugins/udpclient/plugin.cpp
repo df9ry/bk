@@ -3,6 +3,7 @@
 #include "server.hpp"
 
 #include "bk/module.h"
+#include "bkbase/bkerror.hpp"
 
 #include <jsonx.hpp>
 
@@ -18,21 +19,20 @@ using namespace jsonx;
 namespace UdpClient {
 
 static const service_t my_service_ifc {
-    .open_session = [] (void* client_loc_ctx, void** server_ctx_ptr,
-                       const char* meta, const session_t** ifc_ptr) -> bk_error_t
+    .open_session = [] (void* server_ctx, const char* meta, session_reg_t* reg) -> bk_error_t
     {
         try {
-            return BkBase::self<Server>(client_loc_ctx).open_session(server_ctx_ptr, meta, ifc_ptr);
+            return BkBase::self<Server>(server_ctx).open_session(meta, reg);
         }
         catch (const exception& ex) {
             Plugin::error(string("UdpClient::Plugin::open_session() exception") + ex.what());
             return BK_ERC_RUNTIME_EXCEPTION;
         }
     },
-    .close_session = [] (void* server_ctx) -> bk_error_t
+    .close_session = [] (void* server_ctx, const void* session_ctx) -> bk_error_t
     {
         try {
-            return BkBase::self<Server>(server_ctx).close_session();
+            return BkBase::self<Server>(server_ctx).close_session(session_ctx);
         }
         catch (const exception& ex) {
             Plugin::error(string("UdpClient::Plugin::close_session() exception") + ex.what());
@@ -53,15 +53,15 @@ bk_error_t Plugin::publish_services()
         auto p_server = Server::create(service);
         assert(p_server);
         const Server& server = *p_server;
-        service_reg_t reg{ .service_ctx = p_server.get(), .service_ifc = &my_service_ifc };
+        auto name = service["name"].toString();
         bk_error_t erc = admin_ifc.publish(
-            id.c_str(), oss.str().c_str(), &reg);
+            id.c_str(), name.c_str(), oss.str().c_str(), service_reg_t { my_service_ifc, p_server.get() });
         if (erc != BK_ERC_OK)
-            admin_ifc.debug(BK_FATAL, (
-                                  "Unable to publish service \"" +
-                                  service["name"].toString() +
-                                  "\"!. ERC = " +
-                                  to_string(erc)).c_str());
+            admin_ifc.debug(BK_FATAL, (string("Unable to publish service \"")
+                                        + name + "\"!. ERC = "
+                                        + to_string(erc)
+                                        + ": "
+                                        + BkBase::bk_error_message(erc)).c_str());
     }); // end for_each //
     return BK_ERC_OK;
 }

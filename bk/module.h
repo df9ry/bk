@@ -15,22 +15,29 @@ enum grade_t {
 
 // Type for service registration:
 struct service_reg_t {
-    void            *service_ctx; // Context (self of service provider)
-    const service_t *service_ifc; // Interface
+    service_t  ifc; // Interface
+    void      *ctx; // Context (self of service provider)
 };
 
 // Interface to publish and withdraw services:
 struct admin_t {
-    bk_error_t (*publish)  (const char* module_id, const char* meta,
-                            const service_reg_t* service);
-    bk_error_t (*withdraw) (const char* module_id, const char* name);
+    // Publish a service in the service registry:
+    bk_error_t (*publish)  (const char*         module_id, // Module ID
+                            const char*         name,      // Service name
+                            const char*         meta,      // Service metadata
+                            const service_reg_t service);  // Service registration
+    // Withdraw a service from the service registry:
+    bk_error_t (*withdraw) (const char*         module_id, // Module ID
+                            const char*         name);     // Service name
+    // Debug output to stdout / stderr:
     void       (*debug) (grade_t grade, const char* text);
+    // Dump data block:
     void       (*dump)  (const char* text, const char* pb, size_t cb);
 };
 
 // Lookup interface:
 struct lookup_t {
-    const service_reg_t* (*find_service) (const char* server);
+    const service_reg_t* (*find_service) (const char* name); // Lookup service
 };
 
 // Interface to handle loadable modules:
