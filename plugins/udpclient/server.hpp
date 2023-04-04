@@ -1,5 +1,5 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef _UDPCLIENT_SERVER_HPP
+#define _UDPCLIENT_SERVER_HPP
 
 #include <bk/module.h>
 #include <bkbase/bkobject.hpp>
@@ -12,8 +12,6 @@
 #include <thread>
 #include <atomic>
 #include <cassert>
-
-struct addrinfo;
 
 namespace UdpClient {
 
@@ -81,8 +79,6 @@ private:
     jsonx::json                  meta;
 
     std::unique_ptr<std::thread> worker{nullptr};
-    addrinfo                    *info{nullptr};
-    void                        *target_addr{nullptr};
     std::atomic_bool             quit{false};
     std::atomic_int              sockFD{-1};
     lookup_t                     lookup_ifc{};
@@ -93,4 +89,4 @@ private:
 
 } // end namespace UdpClient //
 
-#endif // SERVER_HPP
+#endif // _UDPCLIENT_SERVER_HPP

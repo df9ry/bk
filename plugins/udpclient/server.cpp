@@ -60,10 +60,6 @@ Server::Server(const json &_meta):
 
 Server::~Server()
 {
-    if (info) {
-        freeaddrinfo(info);
-        info = nullptr;
-    }
 }
 
 Server::Ptr_t Server::create(json meta)
@@ -81,29 +77,13 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
     lookup_ifc = *_lookup_ifc;
     if (crc_type == UNDEF)
         return BK_ERC_INV_CRC_TYPE;
-    worker.reset(new thread([this] () { run(); }));
-    return BK_ERC_OK;
-}
-
-bk_error_t Server::stop()
-{
-    Plugin::info("Stop server \"" + name() + "\"");
-    quit = true;
-    ::close(sockFD);
-    //worker->join();
-    worker.release();
-    return BK_ERC_OK;
-}
-
-void Server::run()
-{
     // Start external TCP service:
-    string port = meta["port"];
-    if (port.empty())
-        port = "telnet";
-    string host = meta["host"];
+    auto port = meta["port"].toInt();
+    if (!port)
+        Plugin::fatal("Missing port property");
+    auto host = meta["host"].toString();
     if (host.empty())
-        host = "localhost";
+        Plugin::fatal("Missing host property");
     int ip_v = meta["ip-v"];
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
@@ -122,84 +102,104 @@ void Server::run()
     default:
         Plugin::error("Invalid internet version (ip-v) property: " +
                       to_string(ip_v) + "! Should be 4 or 6.");
-        return;
+        return BK_ERC_INV_ADDR_INFO;
     } // end switch //
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags    = AI_PASSIVE;
     hints.ai_protocol = IPPROTO_UDP;
-
     // man getaddrinfo
-    assert(!info);
-    int gAddRes = getaddrinfo(host.c_str(), port.c_str(), &hints, &info);
-    if (gAddRes != 0) {
-        Plugin::error("Unable to get address info! Error: " +
-                      string(gai_strerror(gAddRes)));
-        return;
+    struct addrinfo *info;
+    int erc = getaddrinfo(host.c_str(), to_string(port).c_str(), &hints, &info);
+    if (erc) {
+        Plugin::fatal("Unable to get address info! Error: " +
+                      string(gai_strerror(erc)));
+        return BK_ERC_INV_ADDR_INFO;
     }
     if (!info) {
-        Plugin::error("No available adress found!");
-        return;
+        Plugin::fatal("No available adress found!");
+        return BK_ERC_INV_ADDR_INFO;
     }
-
+    // Find usable port:
+    for(struct addrinfo *addr = info; addr != NULL; addr = addr->ai_next)
+    {
+        sockFD = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+        if (sockFD == -1)
+        {
+            erc = errno;
+            continue;
+        }
+        const int enable = 1;
+        if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+            int erc = errno;
+            Plugin::fatal("UDP client: setsockopt(SO_REUSEADDR) failed: " +
+                          to_string(erc) + " (" + strerror(erc) + ")");
+            freeaddrinfo(info);
+            info = nullptr;
+            return BK_ERC_INV_ADDR_INFO;
+        }
+        if (connect(sockFD, addr->ai_addr, addr->ai_addrlen) == 0)
+            break;
+        erc = errno;
+        close(sockFD);
+        sockFD = -1;
+    } // end for //
+    if (erc) {
+        Plugin::fatal("Unable to find usable interface! Error: " +
+                      string(gai_strerror(erc)));
+        freeaddrinfo(info);
+        return BK_ERC_INV_ADDR_INFO;
+    }
+    // Display interface info:
     string ipVer;
+    void *peer_addr{nullptr};
     if (info->ai_family == AF_INET) {
         ipVer              = "IPv4";
         sockaddr_in  *ipv4 = reinterpret_cast<sockaddr_in *>(info->ai_addr);
-        target_addr        = &(ipv4->sin_addr);
+        peer_addr          = &(ipv4->sin_addr);
     } else {
         ipVer              = "IPv6";
         sockaddr_in6 *ipv6 = reinterpret_cast<sockaddr_in6 *>(info->ai_addr);
-        target_addr        = &(ipv6->sin6_addr);
+        peer_addr          = &(ipv6->sin6_addr);
     }
     char ipStr[INET6_ADDRSTRLEN];
-    inet_ntop(info->ai_family, target_addr, ipStr, sizeof(ipStr));
-
+    inet_ntop(info->ai_family, peer_addr, ipStr, sizeof(ipStr));
     Plugin::info("UDP client \"" + name() + "\" using " +
-                 ipVer + ":" + ipStr + ":" + port);
-
-    // let's create a new socket, socketFD is returned as descriptor
-    // man socket for more information
-    // these calls usually return -1 as result of some error
-    assert(sockFD == -1);
-    sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+                 ipVer + ":" + ipStr + ":" + to_string(port));
     if (sockFD == -1) {
         int erc = errno;
         Plugin::fatal("UDP client: Error while creating socket: " +
                       to_string(erc) + " (" + strerror(erc) + ")");
         freeaddrinfo(info);
         info = nullptr;
-        return;
+        return BK_ERC_INV_ADDR_INFO;
     }
+    freeaddrinfo(info);
+    assert(sockFD != -1);
+    worker.reset(new thread([this] () { run(); }));
+    return BK_ERC_OK;
+}
 
-    const int enable = 1;
-    if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-        int erc = errno;
-        Plugin::fatal("UDP client: setsockopt(SO_REUSEADDR) failed: " +
-                      to_string(erc) + " (" + strerror(erc) + ")");
-        freeaddrinfo(info);
-        info = nullptr;
-        return;
-    }
+bk_error_t Server::stop()
+{
+    Plugin::info("Stop server \"" + name() + "\"");
+    quit = true;
+    ::close(sockFD);
+    //worker->join();
+    worker.release();
+    return BK_ERC_OK;
+}
 
-#if 0
-    if (::connect(sockFD, (struct sockaddr *)target_addr, info->ai_addrlen) < 0) {
-        int erc = errno;
-        Plugin::fatal("UDP client: connect failed: " +
-                      to_string(erc) + " (" + strerror(erc) + ")");
-        freeaddrinfo(info);
-        info = nullptr;
-        return;
-    }
-#endif
-
+void Server::run()
+{
     // Receive UDP packages:
     while (!quit) {
+        struct sockaddr_in serAddr;
+        socklen_t serAddrLen = sizeof(serAddr);
         char buffer[1024];
-        struct sockaddr rx_addr;
-        socklen_t rx_addrlen;
         int n = recvfrom(sockFD, buffer, sizeof(buffer), 0,
-                         &rx_addr, &rx_addrlen);
-        Plugin::debug("UDP recvfrom n=" + to_string(n));
+                         (struct sockaddr*)&serAddr, &serAddrLen);
+        //int n = recv(sockFD, buffer, sizeof(buffer), 0);
+        Plugin::debug("UDP client recvfrom n=" + to_string(n));
         if (quit)
             break;
         if (n < 0) {
@@ -209,7 +209,7 @@ void Server::run()
             continue;
         }
         if (n > 0) {
-            Plugin::dump("UDP RX", buffer, n);
+            Plugin::dump("UDP client RX", buffer, n);
             if (response_fun) {
                 switch (crc_type) {
                 case NONE:
@@ -234,8 +234,6 @@ void Server::run()
             }
         }
     } // end while //
-    freeaddrinfo(info);
-    info = nullptr;
 }
 
 bk_error_t Server::open_session(const char* meta, session_reg_t* reg)
@@ -275,8 +273,7 @@ bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
     int n;
     switch (crc_type) {
     case NONE:
-        n = ::sendto(sockFD, (const uint8_t*)p_body, c_body, 0,
-                     (struct sockaddr *)target_addr, info->ai_addrlen);
+        n = ::send(sockFD, (const uint8_t*)p_body, c_body, 0);
         break;
     case CRC_B: {
             auto p = (const uint8_t*)p_body;
@@ -284,8 +281,7 @@ bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
             auto crc = CrcB::crc(p, c_body);
             frame.push_back(crc >> 8);
             frame.push_back(crc & 0x00ff);
-            n = ::sendto(sockFD, frame.data(), frame.size(), 0,
-                         (struct sockaddr *)target_addr, info->ai_addrlen);
+            n = ::send(sockFD, frame.data(), frame.size(), 0);
         }
         break;
     default:
