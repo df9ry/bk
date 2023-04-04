@@ -1,5 +1,5 @@
-#ifndef _UDPCLIENT_PLUGIN_HPP
-#define _UDPCLIENT_PLUGIN_HPP
+#ifndef _UDPSERVER_PLUGIN_HPP
+#define _UDPSERVER_PLUGIN_HPP
 
 #include <stdexcept>
 #include <string>
@@ -10,7 +10,7 @@
 #include <bk/module.h>
 #include <bkbase/bkobject.hpp>
 
-namespace UdpClient {
+namespace UdpServer {
 
 class PluginException: public std::runtime_error
 {
@@ -56,7 +56,7 @@ public:
     }
 
     static void dump(const std::string& msg, const char* pb, size_t cb) {
-        self->admin_ifc.dump(("udpclient:" + msg).c_str(), pb, cb);
+        self->admin_ifc.dump(("udpserver:" + msg).c_str(), pb, cb);
     }
 
     const admin_t admin_ifc;
@@ -77,6 +77,6 @@ private:
 
 };
 
-} // end namespace UdpClient //
+} // end namespace UdpServer //
 
-#endif // _UDPCLIENT_PLUGIN_HPP
+#endif // _UDPSERVER_PLUGIN_HPP

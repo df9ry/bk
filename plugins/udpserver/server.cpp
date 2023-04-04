@@ -19,30 +19,7 @@
 using namespace std;
 using namespace jsonx;
 
-namespace UdpClient {
-
-static const session_t my_session_ifc {
-    .get = [] (void* session_ctx, const char* head, resp_f fun, void* ctx) -> bk_error_t
-    {
-        try {
-            return BkBase::self<Server>(session_ctx).get(head, fun, ctx);
-        }
-        catch (const exception& ex) {
-            Plugin::error(string("UdpClient::get() exception: ") + ex.what());
-            return BK_ERC_RUNTIME_EXCEPTION;
-        }
-    },
-    .post = [] (void* session_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
-    {
-        try {
-            return BkBase::self<Server>(session_ctx).post(head, p_body, c_body);
-        }
-        catch (const exception& ex) {
-            Plugin::error(string("UdpClient::post() exception: ") + ex.what());
-            return BK_ERC_RUNTIME_EXCEPTION;
-        }
-    }
-};
+namespace UdpServer {
 
 Server::Map_t Server::container;
 
@@ -98,12 +75,10 @@ bk_error_t Server::stop()
 void Server::run()
 {
     // Start external TCP service:
-    string port = meta["port"];
-    if (port.empty())
-        port = "telnet";
+    auto port = meta["port"].toInt();
+    if (!port)
+        Plugin::fatal("Missing port property");
     string host = meta["host"];
-    if (host.empty())
-        host = "localhost";
     int ip_v = meta["ip-v"];
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
@@ -120,7 +95,7 @@ void Server::run()
         hints.ai_family = AF_INET6;
         break;
     default:
-        Plugin::error("Invalid internet version (ip-v) property: " +
+        Plugin::fatal("Invalid internet version (ip-v) property: " +
                       to_string(ip_v) + "! Should be 4 or 6.");
         return;
     } // end switch //
@@ -130,7 +105,7 @@ void Server::run()
 
     // man getaddrinfo
     assert(!info);
-    int gAddRes = getaddrinfo(host.c_str(), port.c_str(), &hints, &info);
+    int gAddRes = getaddrinfo(host.c_str(), to_string(port).c_str(), &hints, &info);
     if (gAddRes != 0) {
         Plugin::error("Unable to get address info! Error: " +
                       string(gai_strerror(gAddRes)));
@@ -142,20 +117,21 @@ void Server::run()
     }
 
     string ipVer;
+    void  *listen_addr;
     if (info->ai_family == AF_INET) {
         ipVer              = "IPv4";
         sockaddr_in  *ipv4 = reinterpret_cast<sockaddr_in *>(info->ai_addr);
-        target_addr        = &(ipv4->sin_addr);
+        listen_addr        = &(ipv4->sin_addr);
     } else {
         ipVer              = "IPv6";
         sockaddr_in6 *ipv6 = reinterpret_cast<sockaddr_in6 *>(info->ai_addr);
-        target_addr        = &(ipv6->sin6_addr);
+        listen_addr        = &(ipv6->sin6_addr);
     }
     char ipStr[INET6_ADDRSTRLEN];
-    inet_ntop(info->ai_family, target_addr, ipStr, sizeof(ipStr));
+    inet_ntop(info->ai_family, listen_addr, ipStr, sizeof(ipStr));
 
-    Plugin::info("UDP client \"" + name() + "\" using " +
-                 ipVer + ":" + ipStr + ":" + port);
+    Plugin::info("UDP server \"" + name() + "\" using " +
+                 ipVer + ":" + ipStr + ":" + to_string(port));
 
     // let's create a new socket, socketFD is returned as descriptor
     // man socket for more information
@@ -164,7 +140,7 @@ void Server::run()
     sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
     if (sockFD == -1) {
         int erc = errno;
-        Plugin::fatal("UDP client: Error while creating socket: " +
+        Plugin::fatal("UDP server: Error while creating socket: " +
                       to_string(erc) + " (" + strerror(erc) + ")");
         freeaddrinfo(info);
         info = nullptr;
@@ -174,42 +150,47 @@ void Server::run()
     const int enable = 1;
     if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
         int erc = errno;
-        Plugin::fatal("UDP client: setsockopt(SO_REUSEADDR) failed: " +
+        Plugin::fatal("UDP server: setsockopt(SO_REUSEADDR) failed: " +
                       to_string(erc) + " (" + strerror(erc) + ")");
         freeaddrinfo(info);
         info = nullptr;
         return;
     }
 
-#if 0
-    if (::connect(sockFD, (struct sockaddr *)target_addr, info->ai_addrlen) < 0) {
+    serAddr.sin_family = AF_INET;
+    serAddr.sin_port = htons(port);
+    serAddr.sin_addr.s_addr = host.empty() ? INADDR_ANY : inet_addr(host.c_str());
+
+    if (::bind(sockFD, (struct sockaddr*)&serAddr, sizeof(serAddr)) < 0) {
         int erc = errno;
-        Plugin::fatal("UDP client: connect failed: " +
+        Plugin::fatal("UDP server bind failed: " +
                       to_string(erc) + " (" + strerror(erc) + ")");
         freeaddrinfo(info);
         info = nullptr;
         return;
     }
-#endif
 
     // Receive UDP packages:
     while (!quit) {
         char buffer[1024];
+        socklen_t cliAddrLen = sizeof(cliAddr);
+
         struct sockaddr rx_addr;
         socklen_t rx_addrlen;
         int n = recvfrom(sockFD, buffer, sizeof(buffer), 0,
-                         &rx_addr, &rx_addrlen);
-        Plugin::debug("UDP recvfrom n=" + to_string(n));
+                         (struct sockaddr*)&cliAddr, &cliAddrLen);
+        Plugin::debug("UDP server recvfrom n=" + to_string(n));
         if (quit)
             break;
         if (n < 0) {
             int erc = errno;
-            Plugin::error("UDP client: recv failed: " +
+            Plugin::error("UDP server: recv failed: " +
                           to_string(erc) + " (" + strerror(erc) + ")");
             continue;
         }
         if (n > 0) {
-            Plugin::dump("UDP RX", buffer, n);
+            Plugin::dump("UDP server RX", buffer, n);
+#if 0
             if (response_fun) {
                 switch (crc_type) {
                 case NONE:
@@ -232,72 +213,11 @@ void Server::run()
                     break;
                 } // end switch //
             }
+#endif
         }
     } // end while //
     freeaddrinfo(info);
     info = nullptr;
 }
 
-bk_error_t Server::open_session(const char* meta, session_reg_t* reg)
-{
-    if (session_connected)
-        return BK_ERC_ENGAGED;
-    *reg = session_reg_t{ my_session_ifc, this };
-    session_connected = true;
-    Plugin::info("Session in " + name() + " opened");
-    return BK_ERC_OK;
-}
-
-bk_error_t Server::close_session(const void* session_ctx)
-{
-    if (session_connected) {
-        Plugin::info("Session in " + name() + " closed");
-        session_connected = false;
-    }
-    response_fun = nullptr;
-    response_ctx = nullptr;
-    return BK_ERC_OK;
-}
-
-bk_error_t Server::get(const char* head, resp_f fun, void* ctx)
-{
-    if (!session_connected)
-        return BK_ERC_NOT_CONNECTED;
-    response_fun = fun;
-    response_ctx = ctx;
-    return BK_ERC_OK;
-}
-
-bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
-{
-    if (!session_connected)
-        return BK_ERC_NOT_CONNECTED;
-    int n;
-    switch (crc_type) {
-    case NONE:
-        n = ::sendto(sockFD, (const uint8_t*)p_body, c_body, 0,
-                     (struct sockaddr *)target_addr, info->ai_addrlen);
-        break;
-    case CRC_B: {
-            auto p = (const uint8_t*)p_body;
-            vector<uint8_t> frame(p, p+c_body);
-            auto crc = CrcB::crc(p, c_body);
-            frame.push_back(crc >> 8);
-            frame.push_back(crc & 0x00ff);
-            n = ::sendto(sockFD, frame.data(), frame.size(), 0,
-                         (struct sockaddr *)target_addr, info->ai_addrlen);
-        }
-        break;
-    default:
-        assert(false);
-        return BK_ERC_INV_CRC_TYPE;
-    } // end switch //
-    if (n == -1) {
-        auto erc = errno;
-        Plugin::error("sendto failed with erc " + to_string(erc) + "(" + strerror(erc) + ")");
-        return BK_ERC_TALK_ERROR;
-    }
-    return BK_ERC_OK;
-}
-
-} // end namespace UdpClient //
+} // end namespace UdpServer //

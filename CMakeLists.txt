@@ -15,6 +15,7 @@ add_subdirectory("plugins/ax25")
 add_subdirectory("plugins/ax25ping")
 add_subdirectory("plugins/ipserver")
 add_subdirectory("plugins/udpclient")
+add_subdirectory("plugins/udpserver")
 
 set(PUBLIC_HEADERS
     bk/error.h

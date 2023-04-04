@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.7)
-set(PROJECT_NAME bk_udpclient)
+set(PROJECT_NAME bk_udpserver)
 
 project(${PROJECT_NAME} 
     VERSION 0.1.0
-    DESCRIPTION "UDP client plugin for Baukasten"
+    DESCRIPTION "UDP server plugin for Baukasten"
 )
 
 set(SOURCES

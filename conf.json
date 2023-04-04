@@ -53,7 +53,18 @@
             "load": true,
             "services":
             [
-                { "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93,
+                { "name": "df9ry", "ip-v": 4, "host": "localhost", "port": 8093,
+                #{ "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93,
+                  "crc": "crcB" }
+            ]
+        },
+        {
+            "name": "udpserver",
+            "path": "udpserver/libbk_udpserver.so",
+            "load": true,
+            "services":
+            [
+                { "name": "local_udp", "ip-v": 4, "host": "localhost", "port": 8093,
                   "crc": "crcB" }
             ]
         },
@@ -63,7 +74,7 @@
             "load": true,
             "services":
             [
-                { "name": "ping db0fhn", "target": "db0fhn", "interval": 5000 }
+                { "name": "ping local", "target": "df9ry", "interval": 5000 }
             ]
         },
     ],

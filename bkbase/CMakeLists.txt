@@ -8,11 +8,13 @@ project(${PROJECT_NAME}
 
 set(SOURCES
     bkerror.cpp
+    crcb.cpp
 )
 
 set(HEADERS
     bkerror.hpp
     bkobject.hpp
+    crcb.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

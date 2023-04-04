@@ -29,6 +29,7 @@ using namespace jsonx;
 static atomic_bool quit{false};
 static semaphore gate{};
 static bool silent{false};
+static mutex mutex_{};
 
 static void print_version(ostream &os)
 {
@@ -111,6 +112,7 @@ int main(int argc, char** argv) {
         static session_t my_session_ifc {
             .get = [] (void* session_ctx, const char* head, resp_f fun, void* ctx) -> bk_error_t
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 if (session_ctx != (void*)1)
                     return BK_ERC_NO_SUCH_SESSION;
                 if (!engaged)
@@ -128,6 +130,7 @@ int main(int argc, char** argv) {
             },
             .post = [] (void* session_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 if (session_ctx != (void*)1)
                     return BK_ERC_NO_SUCH_SESSION;
                 if (!engaged)
@@ -146,6 +149,7 @@ int main(int argc, char** argv) {
             .open_session = []
                 (void* server_ctx, const char* meta, session_reg_t* reg) -> bk_error_t
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 if (engaged)
                     return BK_ERC_ENGAGED;
                 *reg = session_reg_t{ my_session_ifc, (void*)1 };
@@ -154,6 +158,7 @@ int main(int argc, char** argv) {
             },
             .close_session = [] (void* server_ctx, const void* session_ctx) -> bk_error_t
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 if ((!engaged) || (server_ctx != (void*)1))
                     return BK_ERC_NO_SUCH_SESSION;
                 client_ctx = nullptr;
@@ -170,10 +175,12 @@ int main(int argc, char** argv) {
                            const char*          _meta,
                            const service_reg_t  _service_reg)->bk_error_t
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 try {
                     assert(_module_id);
                     assert(_name);
                     assert(_meta);
+
                     auto module_ptr = SharedObject::lookup(_module_id);
                     if (!module_ptr)
                         throw runtime_error(string("Module not found: ") + _module_id);
@@ -190,10 +197,12 @@ int main(int argc, char** argv) {
             },
             .withdraw = [] (const char *module_id, const char *name)->bk_error_t
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 return Service::remove_service(name) ? BK_ERC_OK : BK_ERC_NO_SUCH_SERVICE;
             },
             .debug = [] (grade_t grade, const char *msg)->void
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 if (grade == BK_FATAL)
                     throw runtime_error(msg);
                 if ((::silent) && (grade == BK_DEBUG))
@@ -203,6 +212,7 @@ int main(int argc, char** argv) {
             },
             .dump = [] (const char *text, const char *pb, size_t cb)->void
             {
+                lock_guard<decltype(mutex_)> lock(mutex_);
                 cerr << text << ": ";
                 if (!cb) {
                     cerr << endl;
