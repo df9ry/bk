@@ -14,7 +14,7 @@ namespace AX25Ping {
 
 Server::Map_t Server::container;
 
-void Server::response_f(void* client_ctx, const char* head, const char* p_body, size_t c_body)
+void Server::response_f(void* client_ctx, const char* head, const uint8_t* p_body, size_t c_body)
 {
     assert(client_ctx);
     static_cast<Server*>(client_ctx)->response(head, p_body, c_body);
@@ -98,14 +98,15 @@ void Server::tick()
 {
     Plugin::debug("AX25Ping tick");
     assert(target_session_reg.ifc.post);
-    char body[] { 0x00, 0x00 };
+    uint8_t body[] { "The quick brown fox" };
+    Plugin::dump("Request", body, sizeof(body));
     auto erc = target_session_reg.ifc.post(target_session_reg.ctx, "", body, sizeof(body));
     if (erc != BK_ERC_OK)
         Plugin::error((string("server_ifc->post failed with erc=")
                        + to_string(erc) + ": " + BkBase::bk_error_message(erc)).c_str());
 }
 
-void Server::response(const char* head, const char* p_body, size_t c_body)
+void Server::response(const char* head, const uint8_t* p_body, size_t c_body)
 {
     Plugin::dump("Response", p_body, c_body);
 }

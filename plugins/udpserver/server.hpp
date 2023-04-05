@@ -74,7 +74,6 @@ private:
     jsonx::json                  meta;
 
     std::unique_ptr<std::thread> worker{nullptr};
-    addrinfo                    *info{nullptr};
     std::atomic_bool             quit{false};
     std::atomic_int              sockFD{-1};
     lookup_t                     lookup_ifc{};

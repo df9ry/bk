@@ -16,6 +16,8 @@
 #include <unistd.h> // For close
 #include <errno.h>
 
+#define ECHO_TEST // Simply echo received data back
+
 using namespace std;
 using namespace jsonx;
 
@@ -37,10 +39,6 @@ Server::Server(const json &_meta):
 
 Server::~Server()
 {
-    if (info) {
-        freeaddrinfo(info);
-        info = nullptr;
-    }
 }
 
 Server::Ptr_t Server::create(json meta)
@@ -154,6 +152,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
         return BK_ERC_INV_ADDR_INFO;
     }
     freeaddrinfo(info);
+    info = nullptr;
     assert(sockFD != -1);
     worker.reset(new thread([this] () { run(); }));
     return BK_ERC_OK;
@@ -173,7 +172,7 @@ void Server::run()
 {
     // Receive UDP packages:
     while (!quit) {
-        char buffer[1024];
+        uint8_t buffer[1024];
         socklen_t cliAddrLen = sizeof(cliAddr);
 
         struct sockaddr rx_addr;
@@ -185,13 +184,22 @@ void Server::run()
             break;
         if (n < 0) {
             int erc = errno;
-            Plugin::error("UDP server: recv failed: " +
+            Plugin::error("UDP server: recvfrom failed: " +
                           to_string(erc) + " (" + strerror(erc) + ")");
             continue;
         }
         if (n > 0) {
-            Plugin::dump("UDP server RX", buffer, n);
-#if 0
+            //Plugin::dump("UDP server RX", buffer, n);
+#ifdef ECHO_TEST
+            //Plugin::dump("UDP server TX", buffer, n);
+            int l = ::sendto(sockFD, buffer, n, 0,
+                             (struct sockaddr*)&cliAddr, cliAddrLen);
+            if (l < 0) {
+                int erc = errno;
+                Plugin::error("UDP server: sendto failed: " +
+                              to_string(erc) + " (" + strerror(erc) + ")");
+            }
+#else
             if (response_fun) {
                 switch (crc_type) {
                 case NONE:
@@ -217,8 +225,6 @@ void Server::run()
 #endif
         }
     } // end while //
-    freeaddrinfo(info);
-    info = nullptr;
 }
 
 } // end namespace UdpServer //

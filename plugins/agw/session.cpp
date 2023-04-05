@@ -53,7 +53,7 @@ void Session::close()
 
 void Session::run()
 {
-    char buffer[256];
+    uint8_t buffer[256];
     quit = false;
     while (!quit) {
         int n = ::recv(fD, buffer, sizeof(buffer), 0);
@@ -67,7 +67,7 @@ void Session::run()
     server.close(this);
 }
 
-void Session::transmit(const char* pb, const size_t cb)
+void Session::transmit(const uint8_t* pb, const size_t cb)
 {
     Plugin::dump("TX", pb, cb);
     auto cbSent = ::send(fD, pb, cb, 0);
@@ -77,7 +77,7 @@ void Session::transmit(const char* pb, const size_t cb)
     }
 }
 
-void Session::receive(const char* pb, size_t cb)
+void Session::receive(const uint8_t* pb, size_t cb)
 {
     rx_buffer.insert(rx_buffer.end(), pb, pb + cb);
     while (true) {
@@ -106,7 +106,7 @@ void Session::receive(const char* pb, size_t cb)
     } // end while //
 }
 
-void Session::receive(const json& meta, const char* pb, size_t cb)
+void Session::receive(const json& meta, const uint8_t* pb, size_t cb)
 {
     Plugin::dump("RX" + meta_2_string(meta), pb, cb);
     switch (string_2_kind(meta["kind"])) {
@@ -160,7 +160,7 @@ void Session::register_call(const string &call)
     };
     union __attribute__((__packed__)) {
         port_info_reply_t structured;
-        char flat[sizeof(port_info_reply_t)];
+        uint8_t flat[sizeof(port_info_reply_t)];
     } frame;
     ::memset(frame.flat, 0x00, sizeof(frame.flat));
     frame.structured.header.kind = REGISTER_CALL;
@@ -187,7 +187,7 @@ void Session::unregister_call(const string &call)
    };
    union __attribute__((__packed__)) {
        port_info_reply_t structured;
-       char flat[sizeof(port_info_reply_t)];
+       uint8_t flat[sizeof(port_info_reply_t)];
    } frame;
    ::memset(frame.flat, 0x00, sizeof(frame.flat));
    frame.structured.header.kind = UNREGISTER_CALL;
@@ -212,7 +212,7 @@ void Session::port_info()
         ss << ";";
         info = ss.str();
     }
-    vector<char> frame;
+    vector<uint8_t> frame;
     {
         agw_header_t header;
         ::memset(&header, 0x00, sizeof(header));
@@ -237,7 +237,7 @@ void Session::version()
     };
     union __attribute__((__packed__)) {
         port_info_reply_t structured;
-        char flat[sizeof(port_info_reply_t)];
+        uint8_t flat[sizeof(port_info_reply_t)];
     } frame;
     ::memset(frame.flat, 0x00, sizeof(frame.flat));
     frame.structured.header.kind = VERSION;

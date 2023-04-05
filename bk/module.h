@@ -32,7 +32,7 @@ struct admin_t {
     // Debug output to stdout / stderr:
     void       (*debug) (grade_t grade, const char* text);
     // Dump data block:
-    void       (*dump)  (const char* text, const char* pb, size_t cb);
+    void       (*dump)  (const char* text, const uint8_t* pb, size_t cb);
 };
 
 // Lookup interface:

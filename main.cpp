@@ -123,12 +123,12 @@ int main(int argc, char** argv) {
                 quit = !Cli::exec(head ? head : "", oss);
                 if (client_fun) {
                     string response = oss.str();
-                    client_fun(client_ctx, "", response.c_str(), response.length());
+                    client_fun(client_ctx, "", (const uint8_t*)response.c_str(), response.length());
                 }
                 gate.notify();
                 return BK_ERC_OK;
             },
-            .post = [] (void* session_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
+            .post = [] (void* session_ctx, const char* head, const uint8_t* p_body, size_t c_body) -> bk_error_t
             {
                 lock_guard<decltype(mutex_)> lock(mutex_);
                 if (session_ctx != (void*)1)
@@ -136,10 +136,10 @@ int main(int argc, char** argv) {
                 if (!engaged)
                     return BK_ERC_NOT_CONNECTED;
                 stringstream oss;
-                quit = !Cli::exec(p_body ? string(p_body, c_body) : "", oss);
+                quit = !Cli::exec(p_body ? string((const char*)p_body, c_body) : "", oss);
                 if (client_fun) {
                     string response = oss.str();
-                    client_fun(client_ctx, "", response.c_str(), response.length());
+                    client_fun(client_ctx, "", (const uint8_t*)response.c_str(), response.length());
                 }
                 gate.notify();
                 return BK_ERC_OK;
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
                 auto &stream = ((grade == 'w') || (grade == 'e')) ? cerr : cout;
                 stream << "[" << static_cast<char>(grade) << "] " << msg << endl;
             },
-            .dump = [] (const char *text, const char *pb, size_t cb)->void
+            .dump = [] (const char *text, const uint8_t *pb, size_t cb)->void
             {
                 lock_guard<decltype(mutex_)> lock(mutex_);
                 cerr << text << ": ";
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
                 }
                 const auto MAX_L = 40UL; // Max no. of bytes in a line
 
-                const char* _pb{pb};
+                const uint8_t* _pb{pb};
                 size_t _cb{cb};
 
                 while (_cb) {

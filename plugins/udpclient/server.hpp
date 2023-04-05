@@ -67,7 +67,7 @@ public:
     bk_error_t open_session(const char* meta, session_reg_t* reg);
     bk_error_t close_session(const void* session_ctx);
     bk_error_t get(const char* head, resp_f fun, void* ctx);
-    bk_error_t post(const char* head, const char* p_body, size_t c_body);
+    bk_error_t post(const char* head, const uint8_t* p_body, size_t c_body);
 
     bool session_connected{false};
     resp_f response_fun{nullptr};

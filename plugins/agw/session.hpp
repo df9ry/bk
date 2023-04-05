@@ -38,7 +38,7 @@ public:
 
     bool              use_raw_frames() const { return raw_frames; }
     bool              do_monitor() const { return monitor; }
-    void              transmit(const char* pb, const size_t cb);
+    void              transmit(const uint8_t* pb, const size_t cb);
 
 private:
     Session(Server& server, int fD, int id);
@@ -47,7 +47,7 @@ private:
     jsonx::json                  meta{};
 
     std::unique_ptr<std::thread> reader{nullptr};
-    std::vector<char>            rx_buffer{};
+    std::vector<uint8_t>         rx_buffer{};
     bool                         have_header{false};
     size_t                       data_size{0};
     jsonx::json                  frame_meta{};
@@ -55,9 +55,9 @@ private:
     bool                         monitor{false};
 
     void                         run();
-    void                         receive(const char* pb, size_t cb);
+    void                         receive(const uint8_t* pb, size_t cb);
     void                         receive(const jsonx::json &meta,
-                                         const char* pb, size_t cb);
+                                         const uint8_t* pb, size_t cb);
     void                         register_call(const std::string &call);
     void                         unregister_call(const std::string &call);
     void                         version();

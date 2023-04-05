@@ -62,9 +62,9 @@ public:
 
 private:
     static void response_f(void* client_ctx,
-                           const char* head, const char* p_body, size_t c_body);
+                           const char* head, const uint8_t* p_body, size_t c_body);
     void tick();
-    void response(const char* head, const char* p_body, size_t c_body);
+    void response(const char* head, const uint8_t* p_body, size_t c_body);
 
     jsonx::json                  meta;
     Timer                        timer;

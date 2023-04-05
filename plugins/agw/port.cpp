@@ -13,7 +13,7 @@ Port::Ptr_t Port::create(Server& server, int id, const jsonx::json &meta)
     return port;
 }
 
-void Port::receive(Session& session, const jsonx::json &meta, const char *pb, size_t cb)
+void Port::receive(Session& session, const jsonx::json &meta, const uint8_t *pb, size_t cb)
 {
     switch (string_2_kind(meta["kind"])) {
     case TX_QUEUE_S:
@@ -45,7 +45,7 @@ void Port::tx_queue_size(Session& session, const jsonx::json& meta)
     };
     union __attribute__((__packed__)) {
         port_info_reply_t structured;
-        char flat[sizeof(port_info_reply_t)];
+        uint8_t flat[sizeof(port_info_reply_t)];
     } frame;
     ::memset(frame.flat, 0x00, sizeof(frame.flat));
     frame.structured.header.kind = TX_QUEUE_S;
@@ -88,7 +88,7 @@ void Port::connected(Session& session, const std::string& local_call,
         ss << "*** CONNECTED " << (initiated ? "With " : "To Station ") << peer_call;
         info = ss.str();
     }
-    vector<char> frame;
+    vector<uint8_t> frame;
     {
         agw_header_t header;
         ::memset(&header, 0x00, sizeof(header));
@@ -115,7 +115,7 @@ void Port::disconnected(Session& session, const std::string& local_call,
         ss << "*** DISCONNECTED " << (timeout ? "RETRYOUT With " : "From Station ") << peer_call;
         info = ss.str();
     }
-    vector<char> frame;
+    vector<uint8_t> frame;
     {
         agw_header_t header;
         ::memset(&header, 0x00, sizeof(header));

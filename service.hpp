@@ -2,7 +2,6 @@
 #define _SERVICE_HPP
 
 #include "so.hpp"
-#include "bk/service.h"
 
 #include <stdexcept>
 #include <string>

@@ -55,7 +55,7 @@ public:
         self->admin_ifc.debug(BK_FATAL, msg.c_str());
     }
 
-    static void dump(const std::string& msg, const char* pb, size_t cb) {
+    static void dump(const std::string& msg, const uint8_t* pb, size_t cb) {
         self->admin_ifc.dump(("udpclient:" + msg).c_str(), pb, cb);
     }
 

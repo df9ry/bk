@@ -32,7 +32,7 @@ static const session_t my_session_ifc {
             return BK_ERC_RUNTIME_EXCEPTION;
         }
     },
-    .post = [] (void* session_ctx, const char* head, const char* p_body, size_t c_body) -> bk_error_t
+    .post = [] (void* session_ctx, const char* head, const uint8_t* p_body, size_t c_body) -> bk_error_t
     {
         try {
             return BkBase::self<Server>(session_ctx).post(head, p_body, c_body);
@@ -195,11 +195,11 @@ void Server::run()
     while (!quit) {
         struct sockaddr_in serAddr;
         socklen_t serAddrLen = sizeof(serAddr);
-        char buffer[1024];
-        int n = recvfrom(sockFD, buffer, sizeof(buffer), 0,
-                         (struct sockaddr*)&serAddr, &serAddrLen);
-        //int n = recv(sockFD, buffer, sizeof(buffer), 0);
-        Plugin::debug("UDP client recvfrom n=" + to_string(n));
+        uint8_t buffer[1024];
+        //int n = recvfrom(sockFD, buffer, sizeof(buffer), 0,
+        //                 (struct sockaddr*)&serAddr, &serAddrLen);
+        int n = recv(sockFD, buffer, sizeof(buffer), MSG_WAITALL);
+        Plugin::debug("UDP client recv n=" + to_string(n));
         if (quit)
             break;
         if (n < 0) {
@@ -209,7 +209,7 @@ void Server::run()
             continue;
         }
         if (n > 0) {
-            Plugin::dump("UDP client RX", buffer, n);
+            //Plugin::dump("UDP client RX", buffer, n);
             if (response_fun) {
                 switch (crc_type) {
                 case NONE:
@@ -217,11 +217,13 @@ void Server::run()
                     break;
                 case CRC_B:
                     if (n >= 2) {
-                        auto crc = CrcB::crc((const uint8_t*)buffer, n-2);
-                        if (((crc >> 8) == buffer[n-2]) && ((crc & 0x00ff) == buffer[n-1])) {
+                        uint16_t crc = CrcB::crc((const uint8_t*)buffer, n-2);
+                        if ((static_cast<uint8_t>(crc >> 8)     == buffer[n-2]) &&
+                            (static_cast<uint8_t>(crc & 0x00ff) == buffer[n-1]))
+                        {
                             response_fun(response_ctx, "", buffer, n-2);
                         } else {
-                            Plugin::warning("Invalid CRC");
+                            Plugin::warning("UDP client: Invalid CRC");
                         }
                     } else {
                         Plugin::warning("Received short package");
@@ -266,21 +268,21 @@ bk_error_t Server::get(const char* head, resp_f fun, void* ctx)
     return BK_ERC_OK;
 }
 
-bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
+bk_error_t Server::post(const char* head, const uint8_t* p_body, size_t c_body)
 {
     if (!session_connected)
         return BK_ERC_NOT_CONNECTED;
     int n;
     switch (crc_type) {
     case NONE:
-        n = ::send(sockFD, (const uint8_t*)p_body, c_body, 0);
+        n = ::send(sockFD, p_body, c_body, 0);
         break;
     case CRC_B: {
             auto p = (const uint8_t*)p_body;
             vector<uint8_t> frame(p, p+c_body);
-            auto crc = CrcB::crc(p, c_body);
-            frame.push_back(crc >> 8);
-            frame.push_back(crc & 0x00ff);
+            uint16_t crc = CrcB::crc(p, c_body);
+            frame.push_back(static_cast<uint8_t>(crc >> 8));
+            frame.push_back(static_cast<uint8_t>(crc & 0x00ff));
             n = ::send(sockFD, frame.data(), frame.size(), 0);
         }
         break;
@@ -290,7 +292,7 @@ bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
     } // end switch //
     if (n == -1) {
         auto erc = errno;
-        Plugin::error("UDP client: sendto failed with erc "
+        Plugin::error("UDP client: send failed with erc "
                       + to_string(erc) + "(" + strerror(erc) + ")");
         return BK_ERC_TALK_ERROR;
     }

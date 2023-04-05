@@ -36,8 +36,8 @@ public:
     bk_error_t        open(const service_reg_t& target_service_reg);
     void              close();
 
-    void              input( const char* pb, const size_t cb);
-    void              output(const char* pb, const size_t cb);
+    void              input( const uint8_t* pb, const size_t cb);
+    void              output(const uint8_t* pb, const size_t cb);
 
 private:
     Session(Server& server, int fD, int id);

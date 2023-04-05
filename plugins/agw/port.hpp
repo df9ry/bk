@@ -21,7 +21,7 @@ public:
     Port(const Port& other) = delete;
     Port(Port&& other) = delete;
 
-    void receive(Session& session, const jsonx::json &meta, const char *pb, size_t cb);
+    void receive(Session& session, const jsonx::json &meta, const uint8_t *pb, size_t cb);
     std::string name() const;
 
     const int   id;

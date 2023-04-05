@@ -34,10 +34,10 @@ static void telnet_event_handler(telnet_t       *telnet,
 
     switch (ev->type) {
     case TELNET_EV_DATA:
-        self->input(ev->data.buffer, ev->data.size);
+        self->input((const uint8_t*)ev->data.buffer, ev->data.size);
         break;
     case TELNET_EV_SEND:
-        self->output(ev->data.buffer, ev->data.size);
+        self->output((const uint8_t*)ev->data.buffer, ev->data.size);
         break;
     case TELNET_EV_ERROR:
         Plugin::error(ev->error.msg);
@@ -75,7 +75,7 @@ string Session::name() const
     return server.get_name() + "/" + to_string(id);
 }
 
-static void my_resp_fun(void* client_ctx, const char* head, const char* p_body, size_t c_body)
+static void my_resp_fun(void* client_ctx, const char* head, const uint8_t* p_body, size_t c_body)
 {
     assert(client_ctx);
     auto session = static_cast<Session*>(client_ctx);
@@ -95,7 +95,7 @@ bk_error_t Session::open(const service_reg_t& _target_service_reg)
     // Output welcome message, if defined:
     string welcome = server.get_welcome();
     if (!welcome.empty())
-        output(welcome.c_str(), welcome.length());
+        output((const uint8_t*)welcome.c_str(), welcome.length());
     // Tell the server our reponse function:
     target_session_reg.ifc.get(target_session_reg.ctx, "", my_resp_fun, this);
 
@@ -127,7 +127,7 @@ void Session::run()
     close();
 }
 
-void Session::output(const char* pb, const size_t cb)
+void Session::output(const uint8_t* pb, const size_t cb)
 {
     auto cbSent = ::send(fD, pb, cb, 0);
     if (cbSent != cb) {
@@ -136,7 +136,7 @@ void Session::output(const char* pb, const size_t cb)
     }
 }
 
-void Session::input(const char* pb, const size_t cb)
+void Session::input(const uint8_t* pb, const size_t cb)
 {
     if (target_session_reg.ifc.post) {
         auto erc = target_session_reg.ifc.post(target_session_reg.ctx, "", pb, cb);
