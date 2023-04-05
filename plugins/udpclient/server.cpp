@@ -72,18 +72,18 @@ Server::Ptr_t Server::create(json meta)
 
 bk_error_t Server::start(const lookup_t* _lookup_ifc)
 {
-    Plugin::info("Start server \"" + name() + "\"");
+    Plugin::info("Start UDP client \"" + name() + "\"");
     assert(_lookup_ifc);
     lookup_ifc = *_lookup_ifc;
     if (crc_type == UNDEF)
         return BK_ERC_INV_CRC_TYPE;
     // Start external TCP service:
-    auto port = meta["port"].toInt();
-    if (!port)
-        Plugin::fatal("Missing port property");
+    auto port = meta["port"].toString();
+    if (port.empty())
+        Plugin::fatal("UDP client: Missing port property");
     auto host = meta["host"].toString();
     if (host.empty())
-        Plugin::fatal("Missing host property");
+        Plugin::fatal("UDP client: Missing host property");
     int ip_v = meta["ip-v"];
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
@@ -100,7 +100,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
         hints.ai_family = AF_INET6;
         break;
     default:
-        Plugin::error("Invalid internet version (ip-v) property: " +
+        Plugin::error("UDP client: Invalid internet version (ip-v) property: " +
                       to_string(ip_v) + "! Should be 4 or 6.");
         return BK_ERC_INV_ADDR_INFO;
     } // end switch //
@@ -109,20 +109,20 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
     hints.ai_protocol = IPPROTO_UDP;
     // man getaddrinfo
     struct addrinfo *info;
-    int erc = getaddrinfo(host.c_str(), to_string(port).c_str(), &hints, &info);
+    int erc = getaddrinfo(host.c_str(), port.c_str(), &hints, &info);
     if (erc) {
-        Plugin::fatal("Unable to get address info! Error: " +
+        Plugin::fatal("UDP client: Unable to get address info! Error: " +
                       string(gai_strerror(erc)));
         return BK_ERC_INV_ADDR_INFO;
     }
     if (!info) {
-        Plugin::fatal("No available adress found!");
+        Plugin::fatal("UDP client: No available adress found!");
         return BK_ERC_INV_ADDR_INFO;
     }
     // Find usable port:
     for(struct addrinfo *addr = info; addr != NULL; addr = addr->ai_next)
     {
-        sockFD = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+        sockFD = ::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (sockFD == -1)
         {
             erc = errno;
@@ -137,14 +137,14 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
             info = nullptr;
             return BK_ERC_INV_ADDR_INFO;
         }
-        if (connect(sockFD, addr->ai_addr, addr->ai_addrlen) == 0)
+        if (::connect(sockFD, addr->ai_addr, addr->ai_addrlen) == 0)
             break;
         erc = errno;
-        close(sockFD);
+        ::close(sockFD);
         sockFD = -1;
     } // end for //
     if (erc) {
-        Plugin::fatal("Unable to find usable interface! Error: " +
+        Plugin::fatal("UDP client: Unable to find usable interface! Error: " +
                       string(gai_strerror(erc)));
         freeaddrinfo(info);
         return BK_ERC_INV_ADDR_INFO;
@@ -164,7 +164,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
     char ipStr[INET6_ADDRSTRLEN];
     inet_ntop(info->ai_family, peer_addr, ipStr, sizeof(ipStr));
     Plugin::info("UDP client \"" + name() + "\" using " +
-                 ipVer + ":" + ipStr + ":" + to_string(port));
+                 ipVer + ":" + ipStr + ":" + port);
     if (sockFD == -1) {
         int erc = errno;
         Plugin::fatal("UDP client: Error while creating socket: " +
@@ -181,7 +181,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
 
 bk_error_t Server::stop()
 {
-    Plugin::info("Stop server \"" + name() + "\"");
+    Plugin::info("Stop UDP client \"" + name() + "\"");
     quit = true;
     ::close(sockFD);
     //worker->join();
@@ -290,7 +290,8 @@ bk_error_t Server::post(const char* head, const char* p_body, size_t c_body)
     } // end switch //
     if (n == -1) {
         auto erc = errno;
-        Plugin::error("sendto failed with erc " + to_string(erc) + "(" + strerror(erc) + ")");
+        Plugin::error("UDP client: sendto failed with erc "
+                      + to_string(erc) + "(" + strerror(erc) + ")");
         return BK_ERC_TALK_ERROR;
     }
     return BK_ERC_OK;

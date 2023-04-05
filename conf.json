@@ -60,7 +60,7 @@
         {
             "name": "udpserver",
             "path": "udpserver/libbk_udpserver.so",
-            "load": false,
+            "load": true,
             "services":
             [
                 { "name": "local_udp", "ip-v": 4, "host": "localhost", "port": 8093,

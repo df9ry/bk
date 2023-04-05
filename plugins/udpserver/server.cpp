@@ -53,32 +53,16 @@ Server::Ptr_t Server::create(json meta)
 
 bk_error_t Server::start(const lookup_t* _lookup_ifc)
 {
-    Plugin::info("Start server \"" + name() + "\"");
+    Plugin::info("Start UDP server \"" + name() + "\"");
     assert(_lookup_ifc);
     lookup_ifc = *_lookup_ifc;
     if (crc_type == UNDEF)
         return BK_ERC_INV_CRC_TYPE;
-    worker.reset(new thread([this] () { run(); }));
-    return BK_ERC_OK;
-}
-
-bk_error_t Server::stop()
-{
-    Plugin::info("Stop server \"" + name() + "\"");
-    quit = true;
-    ::close(sockFD);
-    //worker->join();
-    worker.release();
-    return BK_ERC_OK;
-}
-
-void Server::run()
-{
     // Start external TCP service:
-    auto port = meta["port"].toInt();
-    if (!port)
-        Plugin::fatal("Missing port property");
-    string host = meta["host"];
+    auto port = meta["port"].toString();
+    if (port.empty())
+        Plugin::fatal("UDP server: Missing port property");
+    auto host = meta["host"].toString();
     int ip_v = meta["ip-v"];
     // we need 2 pointers, res to hold and p to iterate over:
     addrinfo  hints;
@@ -95,81 +79,98 @@ void Server::run()
         hints.ai_family = AF_INET6;
         break;
     default:
-        Plugin::fatal("Invalid internet version (ip-v) property: " +
+        Plugin::error("UDP server: Invalid internet version (ip-v) property: " +
                       to_string(ip_v) + "! Should be 4 or 6.");
-        return;
+        return BK_ERC_INV_ADDR_INFO;
     } // end switch //
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags    = AI_PASSIVE;
     hints.ai_protocol = IPPROTO_UDP;
-
     // man getaddrinfo
-    assert(!info);
-    int gAddRes = getaddrinfo(host.c_str(), to_string(port).c_str(), &hints, &info);
-    if (gAddRes != 0) {
-        Plugin::error("Unable to get address info! Error: " +
-                      string(gai_strerror(gAddRes)));
-        return;
+    struct addrinfo *info;
+    int erc = getaddrinfo(host.empty() ? nullptr : host.c_str(),
+                          port.c_str(), &hints, &info);
+    if (erc) {
+        Plugin::fatal("UDP server: Unable to get address info! Error: " +
+                      string(gai_strerror(erc)));
+        return BK_ERC_INV_ADDR_INFO;
     }
     if (!info) {
-        Plugin::error("No available adress found!");
-        return;
+        Plugin::fatal("UDP server: No available adress found!");
+        return BK_ERC_INV_ADDR_INFO;
     }
-
+    // Find usable port:
+    for(struct addrinfo *addr = info; addr != NULL; addr = addr->ai_next)
+    {
+        sockFD = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+        if (sockFD == -1)
+        {
+            erc = errno;
+            continue;
+        }
+        const int enable = 1;
+        if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+            int erc = errno;
+            Plugin::fatal("UDP server: setsockopt(SO_REUSEADDR) failed: " +
+                          to_string(erc) + " (" + strerror(erc) + ")");
+            freeaddrinfo(info);
+            info = nullptr;
+            return BK_ERC_INV_ADDR_INFO;
+        }
+        if (::bind(sockFD, addr->ai_addr, addr->ai_addrlen) == 0)
+            break;
+        erc = errno;
+        close(sockFD);
+        sockFD = -1;
+    } // end for //
+    if (erc) {
+        Plugin::fatal("UDP server: Unable to find usable interface! Error: " +
+                      string(gai_strerror(erc)));
+        freeaddrinfo(info);
+        return BK_ERC_INV_ADDR_INFO;
+    }
+    // Display interface info:
     string ipVer;
-    void  *listen_addr;
+    void *peer_addr{nullptr};
     if (info->ai_family == AF_INET) {
         ipVer              = "IPv4";
         sockaddr_in  *ipv4 = reinterpret_cast<sockaddr_in *>(info->ai_addr);
-        listen_addr        = &(ipv4->sin_addr);
+        peer_addr          = &(ipv4->sin_addr);
     } else {
         ipVer              = "IPv6";
         sockaddr_in6 *ipv6 = reinterpret_cast<sockaddr_in6 *>(info->ai_addr);
-        listen_addr        = &(ipv6->sin6_addr);
+        peer_addr          = &(ipv6->sin6_addr);
     }
     char ipStr[INET6_ADDRSTRLEN];
-    inet_ntop(info->ai_family, listen_addr, ipStr, sizeof(ipStr));
-
+    inet_ntop(info->ai_family, peer_addr, ipStr, sizeof(ipStr));
     Plugin::info("UDP server \"" + name() + "\" using " +
-                 ipVer + ":" + ipStr + ":" + to_string(port));
-
-    // let's create a new socket, socketFD is returned as descriptor
-    // man socket for more information
-    // these calls usually return -1 as result of some error
-    assert(sockFD == -1);
-    sockFD = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+                 ipVer + ":" + ipStr + ":" + port);
     if (sockFD == -1) {
         int erc = errno;
         Plugin::fatal("UDP server: Error while creating socket: " +
                       to_string(erc) + " (" + strerror(erc) + ")");
         freeaddrinfo(info);
         info = nullptr;
-        return;
+        return BK_ERC_INV_ADDR_INFO;
     }
+    freeaddrinfo(info);
+    assert(sockFD != -1);
+    worker.reset(new thread([this] () { run(); }));
+    return BK_ERC_OK;
+}
 
-    const int enable = 1;
-    if (setsockopt(sockFD, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-        int erc = errno;
-        Plugin::fatal("UDP server: setsockopt(SO_REUSEADDR) failed: " +
-                      to_string(erc) + " (" + strerror(erc) + ")");
-        freeaddrinfo(info);
-        info = nullptr;
-        return;
-    }
+bk_error_t Server::stop()
+{
+    Plugin::info("Stop server \"" + name() + "\"");
+    quit = true;
+    ::close(sockFD);
+    //worker->join();
+    worker.release();
+    return BK_ERC_OK;
+}
 
-    serAddr.sin_family = AF_INET;
-    serAddr.sin_port = htons(port);
-    serAddr.sin_addr.s_addr = host.empty() ? INADDR_ANY : inet_addr(host.c_str());
-
-    if (::bind(sockFD, (struct sockaddr*)&serAddr, sizeof(serAddr)) < 0) {
-        int erc = errno;
-        Plugin::fatal("UDP server bind failed: " +
-                      to_string(erc) + " (" + strerror(erc) + ")");
-        freeaddrinfo(info);
-        info = nullptr;
-        return;
-    }
-
+void Server::run()
+{
     // Receive UDP packages:
     while (!quit) {
         char buffer[1024];
