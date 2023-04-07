@@ -16,4 +16,8 @@ namespace AX25Base {
         std::runtime_error("Invalid property: " + what)
     {};
 
+    NullPointerException::NullPointerException(const string& what):
+        std::runtime_error("Null pointer: " + what)
+    {};
+
 } // end namespace AX25Base //

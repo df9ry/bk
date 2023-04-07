@@ -7,12 +7,25 @@ project(${PROJECT_NAME}
 )
 
 set(SOURCES
+    ax25_i.cpp
+    ax25_s.cpp
+    ax25_u.cpp
     ax25exceptions.cpp
+    ax25invalidframe.cpp
+    ax25payload.cpp
+    ax25primitive.cpp
+    ax25types.cpp
     l2callsign.cpp
 )
 
 set(HEADERS
+    ax25_i.hpp
+    ax25_s.hpp
+    ax25_u.hpp
     ax25exceptions.hpp
+    ax25invalidframe.hpp
+    ax25payload.hpp
+    ax25primitive.hpp
     ax25types.hpp
     l2callsign.hpp
 )

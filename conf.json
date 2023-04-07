@@ -1,9 +1,9 @@
-# Test configuration for Baukasten project
+// Test configuration for Baukasten project
 {
     "name": "Baukasten main test configuration",
-    "plugin_root": "./plugins", # Plugin root directory.
+    "plugin_root": "./plugins", // Plugin root directory.
     "plugins":
-    [ # Plugins to load.
+    [ // Plugins to load.
         { 
             "name": "telnet", 
             "path": "telnet/libbk_telnet.so",
@@ -54,7 +54,7 @@
             "services":
             [
                 { "name": "df9ry", "ip-v": 4, "host": "localhost", "port": 8093, "crc": "crcB" },
-                #{ "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93, "crc": "crcB" },
+                //{ "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93, "crc": "crcB" },
             ]
         },
         {
@@ -80,6 +80,6 @@
     "launch":
     [
         "gnome-terminal -- telnet localhost 3000",
-        #"/usr/share/playonlinux/playonlinux --run \"Paxon\" 2>/dev/null &"
+        //"/usr/share/playonlinux/playonlinux --run \"Paxon\" 2>/dev/null &"
     ]
 }
