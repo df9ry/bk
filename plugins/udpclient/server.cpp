@@ -209,7 +209,7 @@ void Server::run()
             continue;
         }
         if (n > 0) {
-            //Plugin::dump("UDP client RX", buffer, n);
+            Plugin::dump("UDP client RX", buffer, n);
             if (response_fun) {
                 switch (crc_type) {
                 case NONE:

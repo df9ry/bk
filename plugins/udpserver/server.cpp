@@ -16,7 +16,7 @@
 #include <unistd.h> // For close
 #include <errno.h>
 
-#define ECHO_TEST // Simply echo received data back
+#undef ECHO_TEST // Simply echo received data back
 
 using namespace std;
 using namespace jsonx;
@@ -189,7 +189,7 @@ void Server::run()
             continue;
         }
         if (n > 0) {
-            //Plugin::dump("UDP server RX", buffer, n);
+            Plugin::dump("UDP server RX", buffer, n);
 #ifdef ECHO_TEST
             //Plugin::dump("UDP server TX", buffer, n);
             int l = ::sendto(sockFD, buffer, n, 0,
@@ -200,16 +200,17 @@ void Server::run()
                               to_string(erc) + " (" + strerror(erc) + ")");
             }
 #else
-            if (response_fun) {
+            //if (response_fun) {
                 switch (crc_type) {
                 case NONE:
-                    response_fun(response_ctx, "", buffer, n);
+                    //response_fun(response_ctx, "", buffer, n);
                     break;
                 case CRC_B:
                     if (n >= 2) {
                         auto crc = CrcB::crc((const uint8_t*)buffer, n-2);
-                        if (((crc >> 8) == buffer[n-2]) && ((crc & 0x00ff) == buffer[n-1])) {
-                            response_fun(response_ctx, "", buffer, n-2);
+                        if (((crc >> 8) == buffer[n-1]) && ((crc & 0x00ff) == buffer[n-2])) {
+                            Plugin::info("CRC OK");
+                            //response_fun(response_ctx, "", buffer, n-2);
                         } else {
                             Plugin::warning("Invalid CRC");
                         }
@@ -221,7 +222,7 @@ void Server::run()
                     assert(false);
                     break;
                 } // end switch //
-            }
+            //}
 #endif
         }
     } // end while //

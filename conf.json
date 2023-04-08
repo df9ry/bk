@@ -50,10 +50,10 @@
         {
             "name": "udpclient",
             "path": "udpclient/libbk_udpclient.so",
-            "load": true,
+            "load": false,
             "services":
             [
-                { "name": "df9ry", "ip-v": 4, "host": "localhost", "port": 8093, "crc": "crcB" },
+                { "name": "df9ry", "ip-v": 4, "host": "localhost", "port": 9300, "crc": "crcB" },
                 //{ "name": "db0fhn", "ip-v": 4, "host": "db0fhn.ampr.org", "port": 93, "crc": "crcB" },
             ]
         },
@@ -63,14 +63,14 @@
             "load": true,
             "services":
             [
-                { "name": "local_udp", "ip-v": 4, "host": "localhost", "port": 8093,
+                { "name": "local_udp", "ip-v": 4, "port": 9300,
                   "crc": "crcB" }
             ]
         },
         {
             "name": "ax25ping",
             "path": "ax25ping/libbk_ax25ping.so",
-            "load": true,
+            "load": false,
             "services":
             [
                 { "name": "ping local", "target": "df9ry", "interval": 5000 }
