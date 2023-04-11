@@ -69,7 +69,10 @@ public:
     bk_error_t stop();
 
 private:
+    static void response_f(void* client_ctx,
+                           const char* head, const uint8_t* p_body, size_t c_body);
     void run();
+    void response(const char* head, const uint8_t* p_body, size_t c_body);
 
     jsonx::json                  meta;
 
@@ -77,7 +80,7 @@ private:
     std::atomic_bool             quit{false};
     std::atomic_int              sockFD{-1};
     lookup_t                     lookup_ifc{};
-    service_t                    target_service_ifc{};
+    service_reg_t                target_service_reg{};
     session_reg_t                target_session_reg{};
     Crc                          crc_type{UNDEF};
     struct sockaddr_in           serAddr{};

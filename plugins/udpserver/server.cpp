@@ -2,7 +2,7 @@
 #include "plugin.hpp"
 
 #include <bkbase/crcb.hpp>
-#include <ax25base/ax25frame.hpp>
+#include <bkbase/bkerror.hpp>
 
 #include <cstring>
 #include <algorithm>
@@ -26,6 +26,12 @@ namespace UdpServer {
 
 Server::Map_t Server::container;
 
+void Server::response_f(void* client_ctx, const char* head, const uint8_t* p_body, size_t c_body)
+{
+    assert(client_ctx);
+    static_cast<Server*>(client_ctx)->response(head, p_body, c_body);
+}
+
 Server::Server(const json &_meta):
     BkBase::BkObject(), meta{_meta}
 {
@@ -35,7 +41,7 @@ Server::Server(const json &_meta):
     else if (_crc == "crcB")
         crc_type = CRC_B;
     else
-        Plugin::fatal("UDPClient: Invalid CRC type " + _crc);
+        Plugin::fatal("UDPServer: Invalid CRC type " + _crc);
 }
 
 Server::~Server()
@@ -55,6 +61,45 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
     Plugin::info("Start UDP server \"" + name() + "\"");
     assert(_lookup_ifc);
     lookup_ifc = *_lookup_ifc;
+    // Resolve target:
+    string target = meta["target"];
+    if (!target.empty()) {
+        if (!lookup_ifc.find_service)
+            Plugin::fatal("UDPClient: lookup_ifc.find_service is null");
+        assert(lookup_ifc.find_service);
+        auto _target_service_reg = lookup_ifc.find_service(target.c_str());
+        if (!_target_service_reg)
+            Plugin::fatal("UDPClient: Target not found: \"" + target + "\"");
+        assert(_target_service_reg);
+        target_service_reg = *_target_service_reg;
+        // Connect to target server:
+        if (!target_service_reg.ifc.open_session)
+            Plugin::fatal("UDPClient: target_service_ifc.open_session is null");
+        assert(target_service_reg.ifc.open_session);
+        if (!target_service_reg.ifc.close_session)
+            Plugin::fatal("UDPClient: target_service_ifc.close_session is null");
+        assert(target_service_reg.ifc.close_session);
+        // Create target session:
+        auto err = target_service_reg.ifc.open_session(
+            target_service_reg.ctx, "{}", &target_session_reg);
+        if (err != BK_ERC_OK)
+            Plugin::fatal((string("UDPClient: open_session() failed with erc=")
+                           + to_string(err) + ": "
+                           + BkBase::bk_error_message(err)).c_str());
+        if (!target_session_reg.ifc.get)
+            Plugin::fatal("UDPClient: get() is not defined");
+        assert(target_session_reg.ifc.get);
+        if (!target_session_reg.ifc.post)
+            Plugin::fatal("UDPClient: post() is not defined");
+        assert(target_session_reg.ifc.post);
+        // Set callback function:
+        err = target_session_reg.ifc.get(target_session_reg.ctx, "", response_f, this);
+        if (err != BK_ERC_OK)
+            Plugin::fatal((string("UDPClient: server_ifc->get failed with erc=")
+                           + to_string(err) + ": " + BkBase::bk_error_message(err)).c_str());
+    }
+
+    // Open UDP port:
     if (crc_type == UNDEF)
         return BK_ERC_INV_CRC_TYPE;
     // Start external TCP service:
@@ -201,22 +246,32 @@ void Server::run()
                               to_string(erc) + " (" + strerror(erc) + ")");
             }
 #else
-            //if (response_fun) {
+            if (target_session_reg.ifc.post) {
+                bk_error_t erc;
                 switch (crc_type) {
                 case NONE:
-                    //response_fun(response_ctx, "", buffer, n);
+                    erc = target_session_reg.ifc.post(target_session_reg.ctx, "", buffer, n);
+                    if (erc != BK_ERC_OK)
+                        Plugin::error(string("post() error " + to_string(erc) + ": "
+                                             + BkBase::bk_error_message(erc)).c_str());
                     break;
                 case CRC_B:
                     if (n >= 2) {
                         auto crc = CrcB::crc((const uint8_t*)buffer, n-2);
                         if (((crc >> 8) == buffer[n-1]) && ((crc & 0x00ff) == buffer[n-2])) {
                             Plugin::info("CRC OK");
+#if 0
                             auto p1 = static_cast<uint8_t*>(buffer);
                             auto p2 = static_cast<uint8_t*>(buffer + n - 2);
                             auto data(AX25Base::OctetArray(new AX25Base::octet_vector_t(p1, p2)));
                             auto frame = AX25Base::AX25Frame(data, AX25Base::ax25modulo_t::MOD8);
                             Plugin::info(frame.ToString());
-                            //response_fun(response_ctx, "", buffer, n-2);
+#endif
+                            erc = target_session_reg.ifc.post(target_session_reg.ctx, "",
+                                                              buffer, n - 2);
+                            if (erc != BK_ERC_OK)
+                                Plugin::error(string("post() error " + to_string(erc) + ": "
+                                                     + BkBase::bk_error_message(erc)).c_str());
                         } else {
                             Plugin::warning("Invalid CRC");
                         }
@@ -228,10 +283,14 @@ void Server::run()
                     assert(false);
                     break;
                 } // end switch //
-            //}
+            }
 #endif
         }
     } // end while //
+}
+
+void Server::response(const char* head, const uint8_t* p_body, size_t c_body)
+{
 }
 
 } // end namespace UdpServer //

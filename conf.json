@@ -32,7 +32,7 @@
         {
             "name": "ax25",
             "path": "ax25/libbk_ax25.so",
-            "load": false,
+            "load": true,
             "services":
             [
                 { "name": "ax25" }
@@ -64,7 +64,7 @@
             "services":
             [
                 { "name": "local_udp", "ip-v": 4, "port": 9300,
-                  "crc": "crcB" }
+                  "crc": "crcB", "target": "ax25" }
             ]
         },
         {
@@ -73,7 +73,7 @@
             "load": false,
             "services":
             [
-                { "name": "ping local", "target": "df9ry", "interval": 5000 }
+                { "name": "ping local", "target": "local_udp", "interval": 5000 }
             ]
         },
     ],
