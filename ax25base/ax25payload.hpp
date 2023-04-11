@@ -9,12 +9,10 @@
 
 namespace AX25Base {
 
-class AX25Payload;
-typedef std::shared_ptr<AX25Payload> AX25Payload_ptr;
-
 class AX25Payload
 {
 public:
+    typedef std::shared_ptr<AX25Payload> Ptr;
 
     /// <summary>
     /// Create AX.25 element from frame data.
@@ -24,7 +22,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="version">AX.25 version to use.</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload_ptr Create(const OctetArray& payload, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(const OctetArray& payload, bool cmd, bool rsp,
                               ax25version_t version);
 
     /// <summary>
@@ -36,7 +34,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="version">AX.25 version to use.</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload_ptr Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
                               ax25version_t version);
 
     /// <summary>
@@ -47,7 +45,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="modulo">AX.25 Modulo</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload_ptr Create(const OctetArray& payload, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(const OctetArray& payload, bool cmd, bool rsp,
                                ax25modulo_t modulo);
 
     /// <summary>
@@ -59,7 +57,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="modulo">AX.25 Modulo</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload_ptr Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
                                ax25modulo_t modulo);
 
     /// <summary>

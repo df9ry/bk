@@ -6,20 +6,20 @@
 
 namespace AX25Base {
 
-    AX25Payload_ptr AX25_U::Create(const OctetArray& frame, bool cmd, bool rsp)
+    AX25Payload::Ptr AX25_U::Create(const OctetArray& frame, bool cmd, bool rsp)
     {
         switch (frame->at(0) & 0xef)
         {
-        case SABME: return AX25Payload_ptr(new AX25_SABME(frame, cmd, rsp));
-        case SABM : return AX25Payload_ptr(new AX25_SABM(frame, cmd, rsp));
-        case DISC : return AX25Payload_ptr(new AX25_DISC(frame, cmd, rsp));
-        case DM   : return AX25Payload_ptr(new AX25_DM(frame, cmd, rsp));
-        case UA   : return AX25Payload_ptr(new AX25_UA(frame, cmd, rsp));
-        case FRMR : return AX25Payload_ptr(new AX25_FRMR(frame, cmd, rsp));
-        case UI   : return AX25Payload_ptr(new AX25_UI(frame, cmd, rsp));
-        case XID  : return AX25Payload_ptr(new AX25_XID(frame, cmd, rsp));
-        case TEST : return AX25Payload_ptr(new AX25_TEST(frame, cmd, rsp));
-        default: return AX25Payload_ptr(new AX25InvalidFrame(frame, cmd, rsp));
+        case SABME: return AX25Payload::Ptr(new AX25_SABME(frame, cmd, rsp));
+        case SABM : return AX25Payload::Ptr(new AX25_SABM(frame, cmd, rsp));
+        case DISC : return AX25Payload::Ptr(new AX25_DISC(frame, cmd, rsp));
+        case DM   : return AX25Payload::Ptr(new AX25_DM(frame, cmd, rsp));
+        case UA   : return AX25Payload::Ptr(new AX25_UA(frame, cmd, rsp));
+        case FRMR : return AX25Payload::Ptr(new AX25_FRMR(frame, cmd, rsp));
+        case UI   : return AX25Payload::Ptr(new AX25_UI(frame, cmd, rsp));
+        case XID  : return AX25Payload::Ptr(new AX25_XID(frame, cmd, rsp));
+        case TEST : return AX25Payload::Ptr(new AX25_TEST(frame, cmd, rsp));
+        default: return AX25Payload::Ptr(new AX25InvalidFrame(frame, cmd, rsp));
         } // end switch //
     }
 

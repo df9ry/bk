@@ -6,16 +6,16 @@
 
 namespace AX25Base {
 
-    AX25Payload_ptr AX25_S::Create(const OctetArray& frame, ax25modulo_t modulo, bool cmd,
+    AX25Payload::Ptr AX25_S::Create(const OctetArray& frame, ax25modulo_t modulo, bool cmd,
                                bool rsp)
     {
         switch (((modulo != ax25modulo_t::MOD128)?(frame->at(0) & 0x0C):frame->at(0)))
         {
-        case RR:   return AX25Payload_ptr(new AX25_RR(frame, modulo, cmd, rsp));
-        case RNR:  return AX25Payload_ptr(new AX25_RNR(frame, modulo, cmd, rsp));
-        case REJ:  return AX25Payload_ptr(new AX25_REJ(frame, modulo, cmd, rsp));
-        case SREJ: return AX25Payload_ptr(new AX25_SREJ(frame, modulo, cmd, rsp));
-        default: return AX25Payload_ptr(new AX25InvalidFrame(frame, cmd, rsp));
+        case RR:   return AX25Payload::Ptr(new AX25_RR(frame, modulo, cmd, rsp));
+        case RNR:  return AX25Payload::Ptr(new AX25_RNR(frame, modulo, cmd, rsp));
+        case REJ:  return AX25Payload::Ptr(new AX25_REJ(frame, modulo, cmd, rsp));
+        case SREJ: return AX25Payload::Ptr(new AX25_SREJ(frame, modulo, cmd, rsp));
+        default: return AX25Payload::Ptr(new AX25InvalidFrame(frame, cmd, rsp));
         } // end switch //
     }
 

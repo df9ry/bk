@@ -1,7 +1,7 @@
 #include "ax25header.hpp"
 
 #include <algorithm>
-#include <strstream>
+#include <sstream>
 
 using namespace std;
 
@@ -34,12 +34,12 @@ AX25Header::AX25Header(const L2Callsign& _source, const L2Callsign& _destination
     this->length = 14 + ( 7 * digis.size() );
 }
 
-AX25Header::AX25Header(const AX25Header& _template, bool _command, bool _response):
-    source{_template.Source()}, response{_response},
-    destination{_template.Destination()}, command{_command}
+AX25Header::AX25Header(AX25Header::Ptr _template, bool _command, bool _response):
+    source{_template->Source()}, response{_response},
+    destination{_template->Destination()}, command{_command}
 {
-    this->digis = _template.Digis();
-    this->length = _template.Length();
+    this->digis = _template->Digis();
+    this->length = _template->Length();
 }
 
 const L2Callsign& AX25Header::NextHop() const
@@ -96,7 +96,7 @@ void AX25Header::FillInOctetArray(OctetArray& frame) const
 
 std::string AX25Header::ToString() const
 {
-    ostrstream sb;
+    ostringstream sb;
     sb << source.to_string() << " -> " << destination.to_string();
     if (!digis.empty()) {
         sb << " via";

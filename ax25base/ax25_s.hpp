@@ -11,7 +11,7 @@ namespace AX25Base {
 class AX25_S: public AX25Payload
 {
 public:
-    static AX25Payload_ptr Create(const OctetArray& frame, ax25modulo_t modulo, bool cmd,
+    static AX25Payload::Ptr Create(const OctetArray& frame, ax25modulo_t modulo, bool cmd,
                                   bool rsp);
 
     /// <summary>

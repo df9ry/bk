@@ -5,7 +5,6 @@
 #include "l2callsign.hpp"
 
 #include <memory>
-#include <strstream>
 #include <string>
 
 namespace AX25Base {
@@ -39,7 +38,7 @@ public:
     /// <param name="_template">Template header.</param>
     /// <param name="command">Command bit.</param>
     /// <param name="response">Response bit.</param>
-    AX25Header(const AX25Header& _template, bool command, bool response);
+    AX25Header(AX25Header::Ptr _template, bool command, bool response);
 
     /// <summary>
     /// The source of the frame (where it comes from).

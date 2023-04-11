@@ -11,7 +11,7 @@ namespace AX25Base {
 class AX25_U: public AX25Payload
 {
 public:
-    static AX25Payload_ptr Create(const OctetArray& frame, bool cmd, bool rsp);
+    static AX25Payload::Ptr Create(const OctetArray& frame, bool cmd, bool rsp);
 
     /// <summary>
     /// Poll / Final bit.
