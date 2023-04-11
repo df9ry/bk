@@ -11,6 +11,7 @@ set(SOURCES
     ax25_s.cpp
     ax25_u.cpp
     ax25exceptions.cpp
+    ax25header.cpp
     ax25invalidframe.cpp
     ax25payload.cpp
     ax25primitive.cpp
@@ -23,6 +24,7 @@ set(HEADERS
     ax25_s.hpp
     ax25_u.hpp
     ax25exceptions.hpp
+    ax25header.hpp
     ax25invalidframe.hpp
     ax25payload.hpp
     ax25primitive.hpp

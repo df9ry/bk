@@ -16,14 +16,14 @@ namespace AX25Base {
 
     const L2Callsign L2Callsign::CQ{L2Callsign("CQ")};
 
-    L2Callsign::L2Callsign(const octet_vector_t& octets, size_t iStart, bool& last)
+    L2Callsign::L2Callsign(OctetArray octets, size_t iStart, bool& last)
     {
-        int l = octets.size();
+    int l = octets->size();
         if ((iStart < 0) || (iStart + 7 > l))
             throw new ArgumentOutOfRangeException("octets");
         ostringstream sb;
         for (int i = 0; i < 6; ++i) {
-            octet_t b = octets[iStart + i];
+            octet_t b = octets->at(iStart + i);
             if ((b & 0x01) != 0x00)
                 throw new InvalidAX25FrameException("EOA bit inside of callsign field");
             int _ch = ((int)b) >> 1;
@@ -32,7 +32,7 @@ namespace AX25Base {
             sb << ((char)_ch);
         } // end for //
         this->callsign = sb.str();
-        octet_t c = octets[iStart + 6];
+        octet_t c = octets->at(iStart + 6);
         last = ((c & 0x01) != 0x00);
         this->chBit = ((c & 0x80) != 0x00);
         this->ssid = (int)((c & 0x1e) >> 1);
@@ -91,17 +91,18 @@ namespace AX25Base {
         this->chBit = chBit;
     }
 
-    octet_vector_t L2Callsign::octets() const
+    OctetArray L2Callsign::octets() const
     {
         int l = callsign.length();
-        octet_vector_t octets(l);
+        OctetArray octets;
+        octets->resize(7);
         const char* c = &callsign[0];
         int i = 0;
         for (; i < l; ++i)
-            octets[i] = (octet_t)(((int)c[i]) << 1);
+            octets->at(i) = (octet_t)(((int)c[i]) << 1);
         for (; i < 6; ++i)
-            octets[i] = 0x40;
-        octets[6] = (octet_t)((ssid << 1) | ((chBit) ? 0xE0 : 0x60));
+            octets->at(i) = 0x40;
+        octets->at(6) = (octet_t)((ssid << 1) | ((chBit) ? 0xE0 : 0x60));
         return octets;
     }
 

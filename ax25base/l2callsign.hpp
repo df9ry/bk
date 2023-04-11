@@ -7,9 +7,6 @@
 
 namespace AX25Base {
 
-    typedef uint8_t octet_t;
-    typedef std::vector<octet_t> octet_vector_t;
-
     /// <summary>
     /// Hamradio callsign as used in packet radio.
     /// </summary>
@@ -27,7 +24,7 @@ namespace AX25Base {
         /// <param name="octets">The octet buffer.</param>
         /// <param name="iStart">The position in the buffer where to read.</param>
         /// <param name="last"><c>true</c> if the EOA bit is set on this callsign.</param>
-        L2Callsign(const octet_vector_t& octets, size_t iStart, bool& last);
+        L2Callsign(OctetArray octets, size_t iStart, bool& last);
 
         /// <summary>
         /// Construct a new callsign.
@@ -60,7 +57,7 @@ namespace AX25Base {
         /// <summary>
         /// Get binary presentation of this callsign.
         /// </summary>
-        octet_vector_t octets() const;
+        OctetArray octets() const;
 
         /// <summary>
         /// Get string representation of this callsign.
@@ -78,11 +75,12 @@ namespace AX25Base {
         /// </summary>
         int get_ssid() const { return ssid; }
 
-    private:
-        // Forbidden constructors:
-        L2Callsign() = delete;
-        L2Callsign(L2Callsign&& other) = delete;
+        /// <summary>
+        /// Copy assignment operator.
+        /// </summary>
+        L2Callsign& operator=(const L2Callsign& other) = default;
 
+    private:
         /// <summary>
         /// The callsign without(!) ssid.
         /// </summary>
