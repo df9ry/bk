@@ -2,7 +2,7 @@
 
 namespace AX25Base {
 
-static const char* ax25frame_i(ax25frame_t t)
+const char* ax25frame_s(ax25frame_t t)
 {
 #define CASE(N) case N: return #N
     switch (t) {

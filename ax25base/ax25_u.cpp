@@ -30,13 +30,7 @@ namespace AX25Base {
 
     bool AX25_U::get_PF() const
     {
-        switch (m_modulo)
-        {
-        case ax25modulo_t::MOD8: return ((m_payload->at(0) & 0x10) != 0x00);
-        case ax25modulo_t::MOD128: return ((m_payload->at(1) & 0x01) != 0x10);
-        default:
-            throw new InvalidPropertyException("Attempt to get PF with unknown modulo");
-        } // end switch //
+        return ((m_payload->at(0) & 0x10) != 0x00);
     }
 
     void AX25_U::set_PF(bool value)

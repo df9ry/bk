@@ -7,7 +7,7 @@
 
 namespace AX25Base {
 
-AX25Payload::AX25Payload(const OctetArray& payload, ax25modulo_t modulo, bool cmd, bool rsp)
+AX25Payload::AX25Payload(OctetArray payload, ax25modulo_t modulo, bool cmd, bool rsp)
 {
     if (!payload)
         throw NullPointerException("payload");
@@ -17,27 +17,23 @@ AX25Payload::AX25Payload(const OctetArray& payload, ax25modulo_t modulo, bool cm
     m_response = rsp;
 }
 
-AX25Payload::Ptr AX25Payload::Create(const OctetArray& payload, bool cmd, bool rsp,
+AX25Payload::Ptr AX25Payload::Create(OctetArray payload, bool cmd, bool rsp,
                           ax25version_t version)
 {
     if (!payload)
         throw NullPointerException("payload");
-    ax25modulo_t modulo = (version == ax25version_t::V2_2) ?
-                              ax25modulo_t::MOD128 : ax25modulo_t::MOD8;
     return AX25Payload::Create(payload, cmd, rsp, version);
 }
 
-AX25Payload::Ptr AX25Payload::Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
+AX25Payload::Ptr AX25Payload::Create(OctetArray frame, int iFrame, bool cmd, bool rsp,
                           ax25version_t version)
 {
     if (!frame)
         throw NullPointerException("frame");
-    ax25modulo_t modulo = (version == ax25version_t::V2_2) ?
-                              ax25modulo_t::MOD128 : ax25modulo_t::MOD8;
     return AX25Payload::Create(frame, iFrame, cmd, rsp, version);
 }
 
-AX25Payload::Ptr Create(const OctetArray& payload, bool cmd, bool rsp,
+AX25Payload::Ptr AX25Payload::Create(OctetArray payload, bool cmd, bool rsp,
                           ax25modulo_t modulo)
 {
     if (!payload)
@@ -52,7 +48,7 @@ AX25Payload::Ptr Create(const OctetArray& payload, bool cmd, bool rsp,
         return AX25_U::Create(payload, cmd, rsp);
 }
 
-AX25Payload::Ptr AX25Payload::Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
+AX25Payload::Ptr AX25Payload::Create(OctetArray frame, int iFrame, bool cmd, bool rsp,
                            ax25modulo_t modulo)
 {
     if (!frame)

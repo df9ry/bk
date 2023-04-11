@@ -22,7 +22,7 @@ public:
     /// ToString method.
     /// </summary>
     /// <param name="sb">String builder.</param>
-    virtual void ToString(std::ostringstream& sb) const
+    virtual void ToString(std::ostream& sb) const
     {
         sb << "IFRM " << m_payload->max_size() << " octets";
     }

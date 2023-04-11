@@ -76,7 +76,7 @@ public:
     /// ToString method.
     /// </summary>
     /// <param name="sb">String builder.</param>
-    virtual void ToString(std::ostringstream& sb)
+    virtual void ToString(std::ostream& sb) const
     {
         sb << ax25frame_s(N);
         if (get_PF())

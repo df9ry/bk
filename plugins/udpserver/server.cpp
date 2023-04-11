@@ -2,6 +2,7 @@
 #include "plugin.hpp"
 
 #include <bkbase/crcb.hpp>
+#include <ax25base/ax25frame.hpp>
 
 #include <cstring>
 #include <algorithm>
@@ -189,7 +190,7 @@ void Server::run()
             continue;
         }
         if (n > 0) {
-            Plugin::dump("UDP server RX", buffer, n);
+            //Plugin::dump("UDP server RX", buffer, n);
 #ifdef ECHO_TEST
             //Plugin::dump("UDP server TX", buffer, n);
             int l = ::sendto(sockFD, buffer, n, 0,
@@ -210,6 +211,11 @@ void Server::run()
                         auto crc = CrcB::crc((const uint8_t*)buffer, n-2);
                         if (((crc >> 8) == buffer[n-1]) && ((crc & 0x00ff) == buffer[n-2])) {
                             Plugin::info("CRC OK");
+                            auto p1 = static_cast<uint8_t*>(buffer);
+                            auto p2 = static_cast<uint8_t*>(buffer + n - 2);
+                            auto data(AX25Base::OctetArray(new AX25Base::octet_vector_t(p1, p2)));
+                            auto frame = AX25Base::AX25Frame(data, AX25Base::ax25modulo_t::MOD8);
+                            Plugin::info(frame.ToString());
                             //response_fun(response_ctx, "", buffer, n-2);
                         } else {
                             Plugin::warning("Invalid CRC");

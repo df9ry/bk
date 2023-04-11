@@ -43,32 +43,32 @@ public:
     /// <summary>
     /// The source of the frame (where it comes from).
     /// </summary>
-    L2Callsign Source() const;
+    L2Callsign Source() const { return source; }
 
     /// <summary>
     /// The destination of the frame (where it should arrive).
     /// </summary>
-    L2Callsign Destination() const;
+    L2Callsign Destination() const { return destination; }
 
     /// <summary>
     /// The intermediate digis on the path.
     /// </summary>
-    std::vector<L2Callsign> Digis() const;
+    std::vector<L2Callsign> Digis() const { return digis; }
 
     /// <summary>
     /// C-Bit of the destination callsign.
     /// </summary>
-    bool IsCommand() const;
+    bool IsCommand() const { return command; }
 
     /// <summary>
     /// C-Bit of the source callsign.
     /// </summary>
-    bool IsResponse() const;
+    bool IsResponse() const { return response; }
 
     /// <summary>
     /// Length of header data [octets].
     /// </summary>
-    int Length() const;
+    int Length() const { return length; }
 
     /// <summary>
     /// Test if this frame is a V1 frame.

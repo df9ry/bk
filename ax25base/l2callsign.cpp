@@ -108,7 +108,10 @@ namespace AX25Base {
 
     string L2Callsign::to_string() const
     {
-        return callsign + "-" + std::to_string(ssid);
+        if (ssid)
+            return callsign + "-" + std::to_string(ssid);
+        else
+            return callsign;
     }
 
 } // end namespace AX25Base //

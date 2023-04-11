@@ -22,7 +22,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="version">AX.25 version to use.</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload::Ptr Create(const OctetArray& payload, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(OctetArray payload, bool cmd, bool rsp,
                               ax25version_t version);
 
     /// <summary>
@@ -34,7 +34,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="version">AX.25 version to use.</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload::Ptr Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(OctetArray frame, int iFrame, bool cmd, bool rsp,
                               ax25version_t version);
 
     /// <summary>
@@ -45,7 +45,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="modulo">AX.25 Modulo</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload::Ptr Create(const OctetArray& payload, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(OctetArray payload, bool cmd, bool rsp,
                                ax25modulo_t modulo);
 
     /// <summary>
@@ -57,7 +57,7 @@ public:
     /// <param name="rsp">Response?</param>
     /// <param name="modulo">AX.25 Modulo</param>
     /// <returns>AX.25 element.</returns>
-    static AX25Payload::Ptr Create(const OctetArray& frame, int iFrame, bool cmd, bool rsp,
+    static AX25Payload::Ptr Create(OctetArray frame, int iFrame, bool cmd, bool rsp,
                                ax25modulo_t modulo);
 
     /// <summary>
@@ -70,7 +70,7 @@ public:
     /// <summary>
     /// Frame Type.
     /// </summary>
-    virtual ax25frame_t FrameType() const { return ax25frame_t::_INV; }
+    virtual ax25frame_t FrameType() const = 0;
 
     /// <summary>
     /// Frame Type Name.
@@ -113,7 +113,7 @@ protected:
     /// To String method.
     /// </summary>
     /// <param name="sb">StringBuilder.</param>
-    virtual void ToString(std::ostringstream& sb) const { sb << "_INV"; }
+    virtual void ToString(std::ostream& sb) const = 0;
 
     /// <summary>
     /// Constructor.
@@ -122,7 +122,7 @@ protected:
     /// <param name="modulo">AX.25 Modulo.</param>
     /// <param name="cmd">Command?</param>
     /// <param name="rsp">Response?</param>
-    AX25Payload(const OctetArray& payload, ax25modulo_t modulo, bool cmd, bool rsp);
+    AX25Payload(OctetArray payload, ax25modulo_t modulo, bool cmd, bool rsp);
 
     /** <summary>Data bytes.  </summary> */ OctetArray     m_payload;
     /** <summary>AX.25 Modulo.</summary> */ ax25modulo_t   m_modulo;

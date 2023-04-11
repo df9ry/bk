@@ -155,7 +155,7 @@ AX25_I::AX25_I(const OctetArray& i, ax25modulo_t modulo, int n_r, int n_s, bool 
         return m_payload->size() - ModuloSize(m_modulo);
     }
 
-    void AX25_I::ToString(std::ostringstream& sb)
+    void AX25_I::ToString(std::ostream& sb) const
     {
         sb << "I(R=" << get_N_R() << ",S=" << get_N_S() << (get_P()?",P":"") << ") "
            << get_I()->size() << " octets";

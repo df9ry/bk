@@ -72,7 +72,7 @@ protected:
     /// To String method.
     /// </summary>
     /// <param name="sb">StringBuilder.</param>
-    virtual void ToString(std::ostringstream& sb);
+    virtual void ToString(std::ostream& sb) const;
 };
 
 } // namespace AX25Base
