@@ -52,7 +52,7 @@ public:
     AX25_UX(bool p, bool cmd = true, bool rsp = false)
         : AX25_U(OctetArray(new octet_vector_t(1)), cmd, rsp)
     {
-        m_payload[0] = ax25frame_mask(N);
+        m_payload->at(0) = ax25frame_mask(N);
         set_PF(p);
     }
 

@@ -94,8 +94,7 @@ namespace AX25Base {
     OctetArray L2Callsign::octets() const
     {
         int l = callsign.length();
-        OctetArray octets;
-        octets->resize(7);
+        OctetArray octets{new octet_vector_t(7)};
         const char* c = &callsign[0];
         int i = 0;
         for (; i < l; ++i)

@@ -24,8 +24,9 @@ AX25Frame::AX25Frame(AX25Header::Ptr header, AX25Payload::Ptr payload):
 
 const OctetArray& AX25Frame::GetOctets() const
 {
-    if (CashedOctets->empty())
+    if (!CashedOctets)
     {
+        CashedOctets.reset(new octet_vector_t());
         OctetArray header = Header->GetOctets();
         CashedOctets->insert(CashedOctets->end(), header->begin(), header->end());
         OctetArray payload = Payload->Octets();

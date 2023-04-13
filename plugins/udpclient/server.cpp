@@ -218,8 +218,8 @@ void Server::run()
                 case CRC_B:
                     if (n >= 2) {
                         uint16_t crc = CrcB::crc((const uint8_t*)buffer, n-2);
-                        if ((static_cast<uint8_t>(crc >> 8)     == buffer[n-2]) &&
-                            (static_cast<uint8_t>(crc & 0x00ff) == buffer[n-1]))
+                        if ((static_cast<uint8_t>(crc >> 8)     == buffer[n-1]) &&
+                            (static_cast<uint8_t>(crc & 0x00ff) == buffer[n-2]))
                         {
                             response_fun(response_ctx, "", buffer, n-2);
                         } else {
@@ -281,8 +281,8 @@ bk_error_t Server::post(const char* head, const uint8_t* p_body, size_t c_body)
             auto p = (const uint8_t*)p_body;
             vector<uint8_t> frame(p, p+c_body);
             uint16_t crc = CrcB::crc(p, c_body);
-            frame.push_back(static_cast<uint8_t>(crc >> 8));
             frame.push_back(static_cast<uint8_t>(crc & 0x00ff));
+            frame.push_back(static_cast<uint8_t>(crc >> 8));
             n = ::send(sockFD, frame.data(), frame.size(), 0);
         }
         break;

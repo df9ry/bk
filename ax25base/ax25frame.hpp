@@ -4,6 +4,8 @@
 #include "ax25header.hpp"
 #include "ax25payload.hpp"
 
+#include <memory>
+
 namespace AX25Base {
 
 /// <summary>
@@ -12,12 +14,14 @@ namespace AX25Base {
 class AX25Frame
 {
 public:
+    typedef std::shared_ptr<AX25Frame> Ptr;
+
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="frame">Frame octets.</param>
     /// <param name="modulo">AX.25 Modulo</param>
-    AX25Frame(const OctetArray& frame, ax25modulo_t modulo);
+    AX25Frame(const OctetArray& frame, ax25modulo_t modulo = AX25Base::ax25modulo_t::MOD8);
 
     /// <summary>
     /// Constructor.
@@ -77,9 +81,9 @@ public:
     AX25Payload::Ptr GetPayload() const { return Payload; }
 
 private:
-    AX25Header::Ptr  Header;
-    AX25Payload::Ptr Payload;
-    OctetArray       CashedOctets{};
+    AX25Header::Ptr    Header;
+    AX25Payload::Ptr   Payload;
+    mutable OctetArray CashedOctets{nullptr};
 };
 
 } // namespace AX25Base

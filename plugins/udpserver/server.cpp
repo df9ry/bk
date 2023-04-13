@@ -260,13 +260,6 @@ void Server::run()
                         auto crc = CrcB::crc((const uint8_t*)buffer, n-2);
                         if (((crc >> 8) == buffer[n-1]) && ((crc & 0x00ff) == buffer[n-2])) {
                             Plugin::info("CRC OK");
-#if 0
-                            auto p1 = static_cast<uint8_t*>(buffer);
-                            auto p2 = static_cast<uint8_t*>(buffer + n - 2);
-                            auto data(AX25Base::OctetArray(new AX25Base::octet_vector_t(p1, p2)));
-                            auto frame = AX25Base::AX25Frame(data, AX25Base::ax25modulo_t::MOD8);
-                            Plugin::info(frame.ToString());
-#endif
                             erc = target_session_reg.ifc.post(target_session_reg.ctx, "",
                                                               buffer, n - 2);
                             if (erc != BK_ERC_OK)

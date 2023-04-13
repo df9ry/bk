@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <cassert>
 
 using namespace std;
 
@@ -75,13 +76,14 @@ void AX25Header::Digipeat()
 OctetArray AX25Header::GetOctets() const
 {
     int nDigis = digis.size();
-    OctetArray frame;
+    OctetArray frame(new octet_vector_t());
     FillInOctetArray(frame);
     return frame;
 }
 
 void AX25Header::FillInOctetArray(OctetArray& frame) const
 {
+    assert(frame);
     frame->clear();
     auto dst{destination.octets()};
     frame->insert(frame->end(), dst->begin(), dst->end());
@@ -91,7 +93,7 @@ void AX25Header::FillInOctetArray(OctetArray& frame) const
         OctetArray f1{cs.octets()};
         frame->insert(frame->end(), f1->begin(), f1->end());
     });
-    frame->at(frame->max_size() - 1) |= 0x01; // SDLC end bit
+    frame->at(frame->size() - 1) |= 0x01; // SDLC end bit
 }
 
 std::string AX25Header::ToString() const

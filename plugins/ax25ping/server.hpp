@@ -5,6 +5,7 @@
 
 #include <bk/module.h>
 #include <bkbase/bkobject.hpp>
+#include <ax25base/ax25frame.hpp>
 
 #include <jsonx.hpp>
 
@@ -71,6 +72,7 @@ private:
     lookup_t                     lookup_ifc{};
     service_reg_t                target_service_reg{};
     session_reg_t                target_session_reg{};
+    AX25Base::AX25Frame::Ptr     frame{nullptr};
 };
 
 } // end namespace AX25Ping //

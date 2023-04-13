@@ -2,19 +2,24 @@
 #include "plugin.hpp"
 
 #include <bkbase/bkerror.hpp>
+#include <ax25base/ax25_u.hpp>
 
 #include <cstring>
 #include <algorithm>
 #include <cassert>
 
+#define MONITOR
+
 using namespace std;
 using namespace jsonx;
+using namespace AX25Base;
 
 namespace AX25Ping {
 
 Server::Map_t Server::container;
 
-void Server::response_f(void* client_ctx, const char* head, const uint8_t* p_body, size_t c_body)
+void Server::response_f(void* client_ctx, const char* head,
+                        const uint8_t* p_body, size_t c_body)
 {
     assert(client_ctx);
     static_cast<Server*>(client_ctx)->response(head, p_body, c_body);
@@ -23,7 +28,8 @@ void Server::response_f(void* client_ctx, const char* head, const uint8_t* p_bod
 Server::Server(const json &_meta):
     BkBase::BkObject(),
     meta{_meta}
-{}
+{
+}
 
 Server::~Server()
 {
@@ -34,7 +40,16 @@ Server::Ptr_t Server::create(json meta)
     string name = meta["name"];
     if (container.contains(name))
         return nullptr;
-    return container.emplace(name, new Server(meta)).first->second;
+    auto server = container.emplace(name, new Server(meta)).first->second;
+    // Create frame:
+    string src = meta["src"];
+    auto src_call = src.empty() ? L2Callsign::CQ : L2Callsign(src);
+    string dst = meta["dst"];
+    auto dst_call = dst.empty() ? L2Callsign::CQ : L2Callsign(dst);
+    auto header = AX25Header::Ptr(new AX25Header(src_call, dst_call));
+    auto payload = AX25Payload::Ptr(new AX25_TEST(true));
+    server->frame.reset(new AX25Frame(header, payload));
+    return server;
 }
 
 bk_error_t Server::start(const lookup_t* _lookup_ifc)
@@ -78,6 +93,7 @@ bk_error_t Server::start(const lookup_t* _lookup_ifc)
         if (erc != BK_ERC_OK)
             Plugin::fatal((string("AX25 Ping: server_ifc->get failed with erc=")
                            + to_string(erc) + ": " + BkBase::bk_error_message(erc)).c_str());
+
         // Start timer:
         int interval = meta["interval"];
         if (!interval)
@@ -98,9 +114,19 @@ void Server::tick()
 {
     Plugin::debug("AX25Ping tick");
     assert(target_session_reg.ifc.post);
-    uint8_t body[] { "The quick brown fox" };
-    Plugin::dump("Request", body, sizeof(body));
-    auto erc = target_session_reg.ifc.post(target_session_reg.ctx, "", body, sizeof(body));
+    const auto& octets = frame->GetOctets();
+    auto pb = octets->data();
+    auto cb = octets->size();
+    Plugin::dump("Request", pb, cb);
+#ifdef MONITOR
+    {
+        auto p2 = static_cast<uint8_t*>(pb + cb);
+        auto data(OctetArray(new AX25Base::octet_vector_t(pb, p2)));
+        auto frame = AX25Frame(data);
+        Plugin::info(frame.ToString());
+    }
+#endif
+    auto erc = target_session_reg.ifc.post(target_session_reg.ctx, "", pb, cb);
     if (erc != BK_ERC_OK)
         Plugin::error((string("server_ifc->post failed with erc=")
                        + to_string(erc) + ": " + BkBase::bk_error_message(erc)).c_str());
