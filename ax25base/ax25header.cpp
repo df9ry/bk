@@ -111,4 +111,16 @@ std::string AX25Header::ToString() const
     return sb.str();
 }
 
+std::vector<L2Callsign> AX25Header::DigisReversed() const
+{
+    if (digis.empty())
+        return digis;
+    std::vector<L2Callsign> result;
+    result.reserve(digis.size());
+    for_each(digis.rbegin(), digis.rend(), [&result] (const L2Callsign& cs) {
+        result.push_back(L2Callsign(cs, false));
+    });
+    return result;
+}
+
 } // namespace AX25Base

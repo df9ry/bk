@@ -1,10 +1,9 @@
 #ifndef _AX25PING_SERVER_HPP
 #define _AX25PING_SERVER_HPP
 
-#include "timer.hpp"
-
 #include <bk/module.h>
 #include <bkbase/bkobject.hpp>
+#include <bkbase/timer.hpp>
 #include <ax25base/ax25frame.hpp>
 
 #include <jsonx.hpp>

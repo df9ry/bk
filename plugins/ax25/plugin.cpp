@@ -2,7 +2,8 @@
 #include "plugin.hpp"
 #include "server.hpp"
 
-#include "bk/module.h"
+#include <bk/module.h>
+#include <bkbase/bkerror.hpp>
 
 #include <jsonx.hpp>
 
@@ -15,6 +16,29 @@
 using namespace std;
 using namespace jsonx;
 
+static const service_t my_service_ifc {
+    .open_session = [] (void* server_ctx, const char* meta, session_reg_t* reg) -> bk_error_t
+    {
+        try {
+            return BkBase::self<Server>(server_ctx).open_session(meta, reg);
+        }
+        catch (const exception& ex) {
+            Plugin::error(string("AX25::Plugin::open_session() exception") + ex.what());
+            return BK_ERC_RUNTIME_EXCEPTION;
+        }
+    },
+    .close_session = [] (void* server_ctx, const void* session_ctx) -> bk_error_t
+    {
+        try {
+            return BkBase::self<Server>(server_ctx).close_session(session_ctx);
+        }
+        catch (const exception& ex) {
+            Plugin::error(string("AX25::Plugin::close_session() exception") + ex.what());
+            return BK_ERC_RUNTIME_EXCEPTION;
+        }
+    }
+};
+
 Plugin* Plugin::self{nullptr};
 
 bk_error_t Plugin::publish_services()
@@ -22,7 +46,21 @@ bk_error_t Plugin::publish_services()
     assert(Plugin::self);
     auto services = Plugin::self->meta["services"].toArray();
     for_each(services.begin(), services.end(), [this] (json service) {
-        Server::create(service);
+        stringstream oss;
+        service.write(oss);
+        auto p_server = Server::create(service);
+        assert(p_server);
+        const Server& server = *p_server;
+        auto name = service["name"].toString();
+        bk_error_t erc = admin_ifc.publish(
+            id.c_str(), name.c_str(), oss.str().c_str(),
+            service_reg_t { my_service_ifc, p_server.get() });
+        if (erc != BK_ERC_OK)
+            admin_ifc.debug(BK_FATAL, (string("Unable to publish service \"")
+                                       + name + "\"!. ERC = "
+                                       + to_string(erc)
+                                       + ": "
+                                       + BkBase::bk_error_message(erc)).c_str());
     }); // end for_each //
     return BK_ERC_OK;
 }

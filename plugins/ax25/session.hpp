@@ -5,6 +5,7 @@
 
 #include <bk/error.h>
 #include <bk/module.h>
+#include <bkbase/bkobject.hpp>
 
 #include <jsonx.hpp>
 
@@ -13,7 +14,7 @@
 
 class Server;
 
-class Session
+class Session: public BkBase::BkObject
 {
 public:
     typedef std::shared_ptr<Session> Ptr_t;
@@ -34,6 +35,8 @@ public:
 
     bk_error_t        open();
     void              close();
+    bk_error_t        get(const char* head, resp_f fun, void* ctx);
+    bk_error_t        post(const char* head, const uint8_t* p_body, size_t c_body);
 
     ax25::DLC         dlc;
 

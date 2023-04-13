@@ -1,19 +1,26 @@
 cmake_minimum_required(VERSION 3.7)
-set(PROJECT_NAME bk_ax25ping)
+set(PROJECT_NAME ax25automaton)
 
 project(${PROJECT_NAME} 
     VERSION 0.1.0
-    DESCRIPTION "AX.25 ping Plugin for Baukasten"
+    DESCRIPTION "AX25 automaton for Baukasten"
 )
 
 set(SOURCES
-    plugin.cpp
-    server.cpp
+    ax25timer.cpp
+    datalinkdisconnected.cpp
+    exec.cpp
+    ifc.cpp
+    primitive.cpp
+    procedures.cpp
+    state.cpp
 )
 
 set(HEADERS
-    plugin.hpp
-    server.hpp
+    ax25timer.hpp
+    ifc.hpp
+    primitive.hpp
+    state.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -27,27 +34,17 @@ target_compile_features(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC BEFORE
-            "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+            "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "${CMAKE_INSTALL_PREFIX}/${CMAKE_BUILD_TYPE}/include/"
             "${PROJECT_BINARY_DIR}")
 
-target_link_directories(${PROJECT_NAME} PUBLIC
-    BEFORE "${CMAKE_INSTALL_PREFIX}/${CMAKE_BUILD_TYPE}/lib/")
-
+set(APP_EXE ${PROJECT_NAME}_Test)
+add_executable(${APP_EXE} test.cpp)
+target_compile_features(${APP_EXE} PUBLIC cxx_std_20)
 if (WIN32)
-    target_link_libraries(${PROJECT_NAME}
-        bk_base
-        ax25base
-        JsonX
-)
+    target_link_libraries(${APP_EXE} ${PROJECT_NAME} bk_base ax25base Threads::Threads stdc++)
 else()
-    target_link_libraries(${PROJECT_NAME}
-        bk_base
-        ax25base
-        JsonX
-        stdc++
-        Threads::Threads
-)
+    target_link_libraries(${APP_EXE} ${PROJECT_NAME} bk_base ax25base Threads::Threads stdc++ m)
 endif()
 
 install(TARGETS ${PROJECT_NAME}

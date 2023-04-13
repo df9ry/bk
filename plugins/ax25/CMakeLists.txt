@@ -37,21 +37,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC BEFORE
             "${CMAKE_INSTALL_PREFIX}/${CMAKE_BUILD_TYPE}/include/"
             "${PROJECT_BINARY_DIR}")
 
-target_link_directories(${PROJECT_NAME} PUBLIC
-    BEFORE "${CMAKE_INSTALL_PREFIX}/${CMAKE_BUILD_TYPE}/lib/")
-
-if (WIN32)
-    target_link_libraries(${PROJECT_NAME}
-        JsonX
-)
-else()
-    target_link_libraries(${PROJECT_NAME}
-        JsonX
-        stdc++
-        Threads::Threads
-)
-endif()
-
 install(TARGETS ${PROJECT_NAME}
     RUNTIME  DESTINATION "${CMAKE_BUILD_TYPE}/bin"
     LIBRARY  DESTINATION "${CMAKE_BUILD_TYPE}/lib")

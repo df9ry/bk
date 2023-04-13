@@ -98,6 +98,11 @@ public:
     const OctetArray& Octets() const { return m_payload; }
 
     /// <summary>
+    /// Get Poll/Final bit.
+    /// </summary>
+    virtual bool get_PF() const { return false; }
+
+    /// <summary>
     /// To String method.
     /// </summary>
     /// <returns>String representation.</returns>

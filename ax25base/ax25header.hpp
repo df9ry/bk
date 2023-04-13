@@ -56,6 +56,11 @@ public:
     std::vector<L2Callsign> Digis() const { return digis; }
 
     /// <summary>
+    /// The intermediate digis on the path reversed.
+    /// </summary>
+    std::vector<L2Callsign> DigisReversed() const;
+
+    /// <summary>
     /// C-Bit of the destination callsign.
     /// </summary>
     bool IsCommand() const { return command; }

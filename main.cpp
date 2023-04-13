@@ -1,11 +1,11 @@
 #include "version.h"
 #include "getopt.h"
 #include "so.hpp"
-#include "semaphore.hpp"
 #include "service.hpp"
 #include "cli.hpp"
 #include "bk/module.h"
 #include "bk/service.h"
+#include "bkbase/semaphore.hpp"
 
 #include <cstdlib>
 #include <jsonx.hpp>

@@ -27,7 +27,7 @@ Session::Ptr_t Session::create(Server& server, int id)
 
 string Session::name() const
 {
-    return server.get_name() + "/" + to_string(id);
+    return server.name() + "/" + to_string(id);
 }
 
 bk_error_t Session::open()
@@ -40,4 +40,14 @@ void Session::close()
 {
     Plugin::debug("Close: " + name());
     server.close(this);
+}
+
+bk_error_t Session::get(const char* head, resp_f fun, void* ctx)
+{
+    return BK_ERC_NOT_IMPLEMENTED;
+}
+
+bk_error_t Session::post(const char* head, const uint8_t* p_body, size_t c_body)
+{
+    return BK_ERC_NOT_IMPLEMENTED;
 }

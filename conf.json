@@ -32,7 +32,7 @@
         {
             "name": "ax25",
             "path": "ax25/libbk_ax25.so",
-            "load": false,
+            "load": true,
             "services":
             [
                 { "name": "ax25" }
@@ -75,7 +75,7 @@
             "load": true,
             "services":
             [
-                { "name": "ping", "target": "db0fhn", "interval": 5000,
+                { "name": "ping", "target": "ax25", "interval": 5000,
                   "src": "df9ry-15", "dst": "db0fhn" }
             ]
         },

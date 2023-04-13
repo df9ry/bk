@@ -4,6 +4,7 @@
 #include "session.hpp"
 
 #include <bk/module.h>
+#include <bkbase/bkobject.hpp>
 
 #include <jsonx.hpp>
 
@@ -17,7 +18,7 @@ public:
     ServerException(const std::string &msg): std::runtime_error(msg.c_str()) {}
 };
 
-class Server {
+class Server: public BkBase::BkObject {
 public:
     typedef std::shared_ptr<Server> Ptr_t;
     typedef std::map<std::string, Ptr_t> Map_t;
@@ -53,9 +54,11 @@ public:
     Server(const Server& other) = delete;
     Server(Server&& other) = delete;
 
-    std::string get_name() const { return meta["name"]; }
+    std::string name() const { return meta["name"]; }
     bk_error_t start(const lookup_t* lookup_ifc);
     bk_error_t stop();
+    bk_error_t open_session(const char* meta, session_reg_t* reg);
+    bk_error_t close_session(const void* session_ctx);
     void close(Session* session);
 
 private:

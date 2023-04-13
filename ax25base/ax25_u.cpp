@@ -1,6 +1,5 @@
 #include "ax25_u.hpp"
 #include "ax25invalidframe.hpp"
-#include "ax25exceptions.hpp"
 
 #include <cstring>
 

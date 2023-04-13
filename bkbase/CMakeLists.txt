@@ -9,12 +9,17 @@ project(${PROJECT_NAME}
 set(SOURCES
     bkerror.cpp
     crcb.cpp
+    timer.cpp
 )
 
 set(HEADERS
     bkerror.hpp
     bkobject.hpp
     crcb.hpp
+    queue.hpp
+    queue2.hpp
+    semaphore.hpp
+    timer.hpp
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

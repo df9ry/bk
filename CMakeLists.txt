@@ -10,6 +10,7 @@ project(${PROJECT_NAME}
 configure_file(version.hpp.in version.h)
 add_subdirectory("bkbase")
 add_subdirectory("ax25base")
+add_subdirectory("ax25automaton")
 add_subdirectory("plugins/telnet")
 add_subdirectory("plugins/agw")
 add_subdirectory("plugins/ax25")
@@ -27,7 +28,6 @@ set(PUBLIC_HEADERS
 set(HEADERS
     cli.hpp
     getopt.h
-    semaphore.hpp
     service.hpp
     so.hpp
     version.hpp.in
@@ -77,6 +77,7 @@ if (WIN32)
 else()
     target_link_libraries(${PROJECT_NAME}
         JsonX
+        bk_base
         stdc++
         uuid
         dl
