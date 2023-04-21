@@ -59,13 +59,13 @@ public:
     bk_error_t stop();
     bk_error_t open_session(const char* meta, session_reg_t* reg);
     bk_error_t close_session(const void* session_ctx);
-    void close(Session* session);
+    Session::Ptr_t find(const std::string& name);
+    void close(const std::string& name);
 
 private:
-    jsonx::json                  meta;
-    lookup_t                     lookup_ifc{};
-    service_t                    target_service_ifc{};
-    std::vector<Session::Ptr_t>  sessions{};
-    int                          session_id{0};
+    jsonx::json                           meta;
+    lookup_t                              lookup_ifc{};
+    service_t                             target_service_ifc{};
+    std::map<std::string, Session::Ptr_t> sessions{};
 };
 #endif // SERVER_HPP

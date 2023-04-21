@@ -10,24 +10,24 @@
 using namespace std;
 using namespace jsonx;
 
-Session::Session(Server& _server, int _id):
-    server{_server}, id{_id}, dlc{*this}
+Session::Session(Server& _server, const jsonx::json& _meta): BkBase::BkObject(),
+    server{_server}, meta{_meta}, my_name{meta["name"].toString()}, dlc{*this}
 {
 }
 
 Session::~Session()
 {
-    Plugin::info("Close ax25 session \"" + name() + "\"");
+    Plugin::info("Close ax25 session \"" + my_name + "\"");
 }
 
-Session::Ptr_t Session::create(Server& server, int id)
+Session::Ptr_t Session::create(Server& server, const jsonx::json& meta)
 {
-    return Ptr_t(new Session(server, id));
+    return Ptr_t(new Session(server, meta));
 }
 
 string Session::name() const
 {
-    return server.name() + "/" + to_string(id);
+    return server.name() + "/" + my_name;
 }
 
 bk_error_t Session::open()
@@ -38,13 +38,15 @@ bk_error_t Session::open()
 
 void Session::close()
 {
-    Plugin::debug("Close: " + name());
-    server.close(this);
+    Plugin::debug("Close ax25 session: \"" + name() + "\"");
+    server.close(my_name);
 }
 
 bk_error_t Session::get(const char* head, resp_f fun, void* ctx)
 {
-    return BK_ERC_NOT_IMPLEMENTED;
+    client_resp_f = fun;
+    client_context = ctx;
+    return BK_ERC_OK;
 }
 
 bk_error_t Session::post(const char* head, const uint8_t* p_body, size_t c_body)

@@ -63,17 +63,43 @@ bk_error_t Server::stop()
     return BK_ERC_OK;
 }
 
-void Server::close(Session* session)
+Session::Ptr_t Server::find(const string& name)
 {
-    auto iter = find_if(sessions.begin(), sessions.end(),
-                    [session](const auto &sp)->bool { return (session == sp.get()); });
-    if (iter != sessions.end())
-        *iter = nullptr;
+    auto iter = sessions.find(name);
+    return (iter != sessions.end()) ? iter->second : Session::Ptr_t(nullptr);
+}
+
+void Server::close(const std::string& name)
+{
+    sessions.erase(name);
 }
 
 bk_error_t Server::open_session(const char* meta, session_reg_t* reg)
 {
-    return BK_ERC_NOT_IMPLEMENTED;
+    if (!reg) {
+        Plugin::warning("Attempt to open session without registration");
+        return BK_ERC_NO_SESSION_IFC_PTR;
+    }
+    assert(reg);
+    reg->ifc = my_session_ifc;
+    json obj;
+    string session_name;
+    try {
+        obj.parse(meta);
+        session_name = obj["name"].toString();
+    }
+    catch (const exception& ex) {
+        Plugin::warning("Invalid meta: \"" + string(meta) + "\"");
+        return BK_ERC_INV_META;
+    }
+    if (sessions.contains(session_name)) {
+        Plugin::warning("Session already registered: \"" + session_name + "\"");
+        return BK_ERC_ENGAGED;
+    }
+    auto session = Session::create(*this, meta);
+    sessions.emplace(session_name, session);
+    reg->ctx = session.get();
+    return BK_ERC_OK;
 }
 
 bk_error_t Server::close_session(const void* session_ctx)

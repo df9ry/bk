@@ -19,7 +19,7 @@ class Session: public BkBase::BkObject
 public:
     typedef std::shared_ptr<Session> Ptr_t;
 
-    static Ptr_t create(Server& server, int id);
+    static Ptr_t create(Server& server, const jsonx::json& meta);
 
     ~Session();
 
@@ -27,25 +27,27 @@ public:
     Session(const Session& other) = delete;
     Session(Session&& other) = delete;
 
-    std::string       name() const;
+    virtual std::string name() const;
 
-    const int         id;
-    jsonx::json       meta;
-    Server&           server;
+    jsonx::json         meta;
+    Server&             server;
 
-    bk_error_t        open();
-    void              close();
-    bk_error_t        get(const char* head, resp_f fun, void* ctx);
-    bk_error_t        post(const char* head, const uint8_t* p_body, size_t c_body);
+    bk_error_t          open();
+    void                close();
+    bk_error_t          get(const char* head, resp_f fun, void* ctx);
+    bk_error_t          post(const char* head, const uint8_t* p_body, size_t c_body);
 
-    ax25::DLC         dlc;
+    ax25::DLC           dlc;
 
 private:
-    Session(Server& server, int id);
+    Session(Server& server, const jsonx::json& meta);
 
+    const std::string my_name;
     service_t         target_service_ifc{};
     session_t         target_session_ifc{};
     void*             target_session_ctx{nullptr};
+    resp_f            client_resp_f{nullptr};
+    void*             client_context{nullptr};
 };
 
 #endif // SESSION_HPP
